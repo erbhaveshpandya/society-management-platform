@@ -1,0 +1,34 @@
+# Node
+node_modules/
+dist/
+.env
+.env.local
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.db
+*.db-journal
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.sln.docstates
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Build
+out/
+build/
+publish/
