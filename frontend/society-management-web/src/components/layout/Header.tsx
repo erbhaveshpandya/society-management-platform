@@ -1,8 +1,9 @@
-import React from 'react';
-import { Menu, User as UserIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import { Menu, User as UserIcon, KeyRound, LogOut } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { NotificationBell } from '../shared/NotificationBell';
 import axiosClient from '../../api/axiosClient';
+import { ChangePasswordModal } from '../shared/ChangePasswordModal';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -14,8 +15,10 @@ interface HeaderSociety {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [societies, setSocieties] = React.useState<HeaderSociety[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [selectedId, setSelectedId] = React.useState<string>(() => {
     return localStorage.getItem('selectedSocietyId') || '1';
   });
@@ -85,18 +88,56 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         {user.role !== 'SuperAdmin' && <NotificationBell />}
 
         {/* User Profile Summary */}
-        <div className="flex items-center gap-2 border-l border-slate-100 pl-4">
-          <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-semibold text-sm">
-            <UserIcon size={16} />
-          </div>
-          <div className="hidden sm:block text-left">
-            <p className="text-xs font-semibold text-slate-800 leading-none">{user.fullName}</p>
-            <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase mt-0.5 block">
-              {user.role}
-            </span>
-          </div>
+        <div className="relative">
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="flex items-center gap-2 border-l border-slate-100 pl-4 hover:opacity-80 focus:outline-none cursor-pointer"
+          >
+            <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-semibold text-sm">
+              <UserIcon size={16} />
+            </div>
+            <div className="hidden sm:block text-left">
+              <p className="text-xs font-semibold text-slate-800 leading-none">{user.fullName}</p>
+              <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase mt-0.5 block">
+                {user.role}
+              </span>
+            </div>
+          </button>
+
+          {dropdownOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-lg shadow-lg py-1 z-50 text-left">
+                <button
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    setChangePasswordOpen(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 w-full text-left font-medium transition-colors"
+                >
+                  <KeyRound size={16} className="text-slate-400" />
+                  Change Password
+                </button>
+                <button
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    logout();
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 w-full text-left font-medium transition-colors border-t border-slate-50"
+                >
+                  <LogOut size={16} className="text-red-400" />
+                  Logout
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
+
+      <ChangePasswordModal
+        isOpen={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
     </header>
   );
 };

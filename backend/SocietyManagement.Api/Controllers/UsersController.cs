@@ -134,6 +134,28 @@ public class UsersController : BaseApiController
         return Ok(new { message = $"User {(user.IsActive ? "activated" : "deactivated")}", user.Id, user.IsActive });
     }
 
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var userId = GetUserId();
+        var user = await _context.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null) return NotFound("User not found");
+
+        var currentHash = BCryptHash(request.CurrentPassword);
+        if (user.PasswordHash != currentHash)
+            return BadRequest("Incorrect current password");
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 6)
+            return BadRequest("New password must be at least 6 characters long");
+
+        user.PasswordHash = BCryptHash(request.NewPassword);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Password updated successfully" });
+    }
+
     private static string BCryptHash(string password)
     {
         using var hmac = new System.Security.Cryptography.HMACSHA256(
@@ -151,4 +173,10 @@ public class CreateUserRequest
     public string Password { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
     public int? SocietyId { get; set; }
+}
+
+public class ChangePasswordRequest
+{
+    public string CurrentPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
 }
