@@ -81,8 +81,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
           <Home size={20} />
         </div>
         <div className="text-left">
-          <h2 className="font-bold text-white text-sm tracking-wide leading-none">SOCIETY</h2>
-          <p className="text-[10px] text-slate-500 font-medium tracking-wider mt-0.5 uppercase">Management Platform</p>
+          <h2 className="font-bold text-white text-sm tracking-wide leading-none">SOCIVEXA</h2>
+          <p className="text-[9px] text-slate-500 font-medium tracking-wider mt-0.5 uppercase">Smart Society Living</p>
         </div>
       </div>
 

@@ -34,6 +34,14 @@ public static class SeedData
                 CREATE UNIQUE INDEX [IX_VisitorPasses_Passcode] ON [dbo].[VisitorPasses] ([Passcode] ASC);
             END");
 
+        // Update existing old superadmin email if present in database
+        var oldSuperAdmin = context.Users.FirstOrDefault(u => u.Email == "superadmin@smp.com");
+        if (oldSuperAdmin != null)
+        {
+            oldSuperAdmin.Email = "superadmin@socivexa.com";
+            context.SaveChanges();
+        }
+
         if (context.Societies.Any()) return; // Already seeded
 
         using var transaction = context.Database.BeginTransaction();
@@ -66,7 +74,7 @@ public static class SeedData
             var passwordHash = BCryptHash("Password123!");
             var users = new List<User>
             {
-                new() { Id = 1, SocietyId = null, Email = "superadmin@smp.com", PasswordHash = passwordHash, FullName = "System Administrator", Phone = "9000000001", Role = UserRole.SuperAdmin },
+                new() { Id = 1, SocietyId = null, Email = "superadmin@socivexa.com", PasswordHash = passwordHash, FullName = "System Administrator", Phone = "9000000001", Role = UserRole.SuperAdmin },
                 new() { Id = 2, SocietyId = 1, Email = "admin@greenvalley.com", PasswordHash = passwordHash, FullName = "Rajesh Sharma", Phone = "9000000002", Role = UserRole.SocietyAdmin },
                 new() { Id = 3, SocietyId = 2, Email = "admin@sunriseheights.com", PasswordHash = passwordHash, FullName = "Priya Patel", Phone = "9000000003", Role = UserRole.SocietyAdmin },
                 new() { Id = 4, SocietyId = 1, Email = "amit.kumar@email.com", PasswordHash = passwordHash, FullName = "Amit Kumar", Phone = "9000000004", Role = UserRole.Resident },

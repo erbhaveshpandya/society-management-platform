@@ -1,6 +1,8 @@
-# Society Management Platform
+# Socivexa
 
-A complete, responsive, multi-tenant Housing Society & Apartment Management Platform.
+Socivexa is a multi-tenant housing society and apartment management SaaS platform for society admins, residents, security guards, and super admins.
+
+**Tagline**: Smart Society Living, Simplified.
 
 ## Technology Stack
 
@@ -80,7 +82,7 @@ Use any of the following accounts to sign in. The password for all accounts is *
 
 | Role | Email | Society / Wing |
 |------|-------|----------------|
-| **Super Admin** | `superadmin@smp.com` | System-wide access |
+| **Super Admin** | `superadmin@socivexa.com` | System-wide access |
 | **Society Admin** | `admin@greenvalley.com` | Green Valley Residency |
 | **Society Admin** | `admin@sunriseheights.com` | Sunrise Heights |
 | **Resident** | `amit.kumar@email.com` | Green Valley Wing A-101 |
