@@ -1,0 +1,18 @@
+1. Generate the Password Hash using PowerShell
+
+$password = "YourNewPassword123!" # <--- Enter your new password here
+$key = [System.Text.Encoding]::UTF8.GetBytes("SocietyManagementPlatformSecretKey2026!")
+$hmac = New-Object System.Security.Cryptography.HMACSHA256
+$hmac.Key = $key
+$hash = $hmac.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($password))
+$base64Hash = [Convert]::ToBase64String($hash)
+
+Write-Output "Hashed Password: $base64Hash"
+
+---------------
+
+2. Run the SQL Update Statement
+
+UPDATE Users 
+SET PasswordHash = 'YOUR_GENERATED_HASH_HERE' 
+WHERE Email = 'user@email.com';
