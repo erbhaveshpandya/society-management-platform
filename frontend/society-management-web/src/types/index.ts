@@ -105,6 +105,7 @@ export interface MaintenanceInvoice {
   generatedDate: string;
   flatNumber?: string;
   ownerName?: string;
+  buildingName?: string;
   payment?: Payment;
 }
 

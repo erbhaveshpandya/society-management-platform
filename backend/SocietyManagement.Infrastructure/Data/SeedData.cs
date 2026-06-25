@@ -10,6 +10,30 @@ public static class SeedData
     {
         context.Database.EnsureCreated();
 
+        // Ensure VisitorPasses table exists
+        context.Database.ExecuteSqlRaw(@"
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[VisitorPasses]') AND type in (N'U'))
+            BEGIN
+                CREATE TABLE [dbo].[VisitorPasses] (
+                    [Id] INT IDENTITY(1,1) NOT NULL,
+                    [SocietyId] INT NOT NULL,
+                    [VisitorName] NVARCHAR(100) NOT NULL,
+                    [Phone] NVARCHAR(20) NOT NULL,
+                    [VehicleNumber] NVARCHAR(20) NULL,
+                    [FlatId] INT NOT NULL,
+                    [Purpose] NVARCHAR(200) NOT NULL,
+                    [ExpectedDate] DATETIME2(7) NOT NULL,
+                    [Passcode] NVARCHAR(20) NOT NULL,
+                    [IsUsed] BIT NOT NULL,
+                    [IsRevoked] BIT NOT NULL,
+                    [CreatedAt] DATETIME2(7) NOT NULL,
+                    CONSTRAINT [PK_VisitorPasses] PRIMARY KEY CLUSTERED ([Id] ASC),
+                    CONSTRAINT [FK_VisitorPasses_Societies_SocietyId] FOREIGN KEY ([SocietyId]) REFERENCES [dbo].[Societies] ([Id]),
+                    CONSTRAINT [FK_VisitorPasses_Flats_FlatId] FOREIGN KEY ([FlatId]) REFERENCES [dbo].[Flats] ([Id])
+                );
+                CREATE UNIQUE INDEX [IX_VisitorPasses_Passcode] ON [dbo].[VisitorPasses] ([Passcode] ASC);
+            END");
+
         if (context.Societies.Any()) return; // Already seeded
 
         using var transaction = context.Database.BeginTransaction();

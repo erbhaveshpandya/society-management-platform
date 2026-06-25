@@ -40,6 +40,7 @@ public class AppDbContext : DbContext
     public DbSet<StaffAttendance> StaffAttendances => Set<StaffAttendance>();
     public DbSet<ResidentStaffMapping> ResidentStaffMappings => Set<ResidentStaffMapping>();
     public DbSet<VisitorLog> VisitorLogs => Set<VisitorLog>();
+    public DbSet<VisitorPass> VisitorPasses => Set<VisitorPass>();
     public DbSet<ParkingAlert> ParkingAlerts => Set<ParkingAlert>();
     public DbSet<EmergencyAlert> EmergencyAlerts => Set<EmergencyAlert>();
     public DbSet<Notification> Notifications => Set<Notification>();
@@ -267,6 +268,15 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.CheckedInByUser).WithMany().HasForeignKey(e => e.CheckedInBy).OnDelete(DeleteBehavior.Restrict);
         });
 
+        // VisitorPass
+        modelBuilder.Entity<VisitorPass>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Society).WithMany().HasForeignKey(e => e.SocietyId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Flat).WithMany().HasForeignKey(e => e.FlatId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => e.Passcode).IsUnique();
+        });
+
         // ParkingAlert
         modelBuilder.Entity<ParkingAlert>(entity =>
         {
@@ -320,6 +330,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<StaffAttendance>().HasQueryFilter(e => _tenantService.IsSuperAdmin || e.SocietyId == (_tenantService.TenantId ?? -1));
         modelBuilder.Entity<ResidentStaffMapping>().HasQueryFilter(e => _tenantService.IsSuperAdmin || e.SocietyId == (_tenantService.TenantId ?? -1));
         modelBuilder.Entity<VisitorLog>().HasQueryFilter(e => _tenantService.IsSuperAdmin || e.SocietyId == (_tenantService.TenantId ?? -1));
+        modelBuilder.Entity<VisitorPass>().HasQueryFilter(e => _tenantService.IsSuperAdmin || e.SocietyId == (_tenantService.TenantId ?? -1));
         modelBuilder.Entity<ParkingAlert>().HasQueryFilter(e => _tenantService.IsSuperAdmin || e.SocietyId == (_tenantService.TenantId ?? -1));
         modelBuilder.Entity<EmergencyAlert>().HasQueryFilter(e => _tenantService.IsSuperAdmin || e.SocietyId == (_tenantService.TenantId ?? -1));
         modelBuilder.Entity<Notification>().HasQueryFilter(e => _tenantService.IsSuperAdmin || e.SocietyId == (_tenantService.TenantId ?? -1));

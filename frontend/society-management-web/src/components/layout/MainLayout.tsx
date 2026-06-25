@@ -1,10 +1,107 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { useAuth } from '../../hooks/useAuth';
+import axiosClient from '../../api/axiosClient';
+import { Siren, Volume2, VolumeX, AlertOctagon, ShieldAlert } from 'lucide-react';
+import { Button } from '../ui/Button';
+
+interface EmergencyAlert {
+  id: number;
+  type: string;
+  description: string;
+  reportedByName: string;
+  reportedAt: string;
+  isResolved: boolean;
+}
 
 export const MainLayout: React.FC = () => {
+  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // SOS Alarm Monitoring states
+  const [activeAlert, setActiveAlert] = useState<EmergencyAlert | null>(null);
+  const [acknowledgedIds, setAcknowledgedIds] = useState<number[]>([]);
+  const [isMuted, setIsMuted] = useState(false);
+
+  const audioIntervalRef = useRef<any>(null);
+
+  // Background polling for guards
+  useEffect(() => {
+    if (user?.role !== 'SecurityGuard') return;
+
+    const checkEmergencies = async () => {
+      try {
+        const res = await axiosClient.get<EmergencyAlert[]>('emergency-alerts');
+        // Find latest unresolved alert that hasn't been acknowledged locally yet
+        const unresolved = res.data.find(
+          (alert) => !alert.isResolved && !acknowledgedIds.includes(alert.id)
+        );
+
+        if (unresolved) {
+          setActiveAlert(unresolved);
+        } else {
+          setActiveAlert(null);
+        }
+      } catch (err) {
+        console.error('Failed to poll emergency alerts:', err);
+      }
+    };
+
+    checkEmergencies(); // check immediately
+    const interval = setInterval(checkEmergencies, 8000); // check every 8 seconds
+
+    return () => clearInterval(interval);
+  }, [user, acknowledgedIds]);
+
+  // Audio Siren synthesizer loop
+  useEffect(() => {
+    if (activeAlert && !isMuted) {
+      const playSirenBeep = () => {
+        try {
+          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+          osc.frequency.linearRampToValueAtTime(900, audioCtx.currentTime + 0.4);
+          osc.frequency.linearRampToValueAtTime(500, audioCtx.currentTime + 0.8);
+          
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+          
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.8);
+        } catch (e) {
+          console.warn('Audio synthesis blocked by user interaction requirements');
+        }
+      };
+
+      playSirenBeep(); // play immediately
+      audioIntervalRef.current = setInterval(playSirenBeep, 1000);
+    } else {
+      if (audioIntervalRef.current) {
+        clearInterval(audioIntervalRef.current);
+      }
+    }
+
+    return () => {
+      if (audioIntervalRef.current) {
+        clearInterval(audioIntervalRef.current);
+      }
+    };
+  }, [activeAlert, isMuted]);
+
+  const handleAcknowledge = () => {
+    if (activeAlert) {
+      setAcknowledgedIds([...acknowledgedIds, activeAlert.id]);
+      setActiveAlert(null);
+      setIsMuted(false);
+    }
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
@@ -35,6 +132,75 @@ export const MainLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* EMERGENCY SOS GLOBAL ALARM OVERLAY MODAL */}
+      {activeAlert && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-red-950/80 backdrop-blur-md p-4 animate-pulse-slow">
+          <div className="bg-white border-4 border-red-600 rounded-2xl shadow-2xl p-6 md:p-8 max-w-lg w-full text-center space-y-6 animate-scale-up">
+            <div className="flex justify-center">
+              <div className="p-4 bg-red-100 text-red-600 rounded-full animate-bounce">
+                <ShieldAlert size={48} />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black text-red-600 tracking-wider uppercase animate-pulse">
+                🚨 EMERGENCY SOS SIGNAL 🚨
+              </h2>
+              <p className="text-xs text-slate-500 font-semibold">
+                An active distress signal has been reported in the society.
+              </p>
+            </div>
+
+            <div className="bg-red-50/50 border border-red-100 rounded-xl p-4 text-left space-y-3 text-sm">
+              <div className="grid grid-cols-3 gap-2">
+                <span className="text-xs text-slate-400 font-bold uppercase">Reported By</span>
+                <span className="col-span-2 font-bold text-slate-800">{activeAlert.reportedByName}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-2.5">
+                <span className="text-xs text-slate-400 font-bold uppercase">Alert Category</span>
+                <span className="col-span-2 font-black text-red-600 uppercase tracking-wide">
+                  {activeAlert.type.replace(/([A-Z])/g, ' $1')}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-2.5">
+                <span className="text-xs text-slate-400 font-bold uppercase">Timestamp</span>
+                <span className="col-span-2 text-slate-600 font-medium">
+                  {new Date(activeAlert.reportedAt).toLocaleTimeString('en-IN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  })}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-2.5">
+                <span className="text-xs text-slate-400 font-bold uppercase">Description</span>
+                <span className="col-span-2 text-slate-700 italic font-semibold leading-relaxed">
+                  "{activeAlert.description}"
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsMuted(!isMuted)}
+                className="flex items-center justify-center p-3 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 transition-colors"
+                title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
+              >
+                {isMuted ? <Volume2 size={20} /> : <VolumeX size={20} />}
+              </button>
+              <Button
+                variant="primary"
+                onClick={handleAcknowledge}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-extrabold text-sm py-3 flex items-center justify-center gap-1.5 shadow-md"
+              >
+                <AlertOctagon size={16} /> Acknowledge & Mute Alarm
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

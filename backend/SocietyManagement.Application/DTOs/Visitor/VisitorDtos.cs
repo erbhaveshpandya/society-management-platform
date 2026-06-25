@@ -69,3 +69,46 @@ public class CreateEmergencyAlertRequest
     [MaxLength(500)]
     public string Description { get; set; } = string.Empty;
 }
+
+public class VisitorPassDto
+{
+    public int Id { get; set; }
+    public int SocietyId { get; set; }
+    public string VisitorName { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string? VehicleNumber { get; set; }
+    public int FlatId { get; set; }
+    public string FlatNumber { get; set; } = string.Empty;
+    public string Purpose { get; set; } = string.Empty;
+    public DateTime ExpectedDate { get; set; }
+    public string Passcode { get; set; } = string.Empty;
+    public bool IsUsed { get; set; }
+    public bool IsRevoked { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class PreRegisterVisitorRequest
+{
+    [Required, MaxLength(100)]
+    public string VisitorName { get; set; } = string.Empty;
+
+    [Required, MaxLength(20)]
+    public string Phone { get; set; } = string.Empty;
+
+    [MaxLength(20)]
+    public string? VehicleNumber { get; set; }
+
+    public int FlatId { get; set; }
+
+    [Required, MaxLength(200)]
+    public string Purpose { get; set; } = string.Empty;
+
+    public DateTime ExpectedDate { get; set; }
+}
+
+public class VerifyPasscodeRequest
+{
+    [Required]
+    public string Passcode { get; set; } = string.Empty;
+}
+
