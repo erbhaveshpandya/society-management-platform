@@ -45,6 +45,7 @@ public class AppDbContext : DbContext
     public DbSet<EmergencyAlert> EmergencyAlerts => Set<EmergencyAlert>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
 
     public override int SaveChanges()
     {
@@ -308,6 +309,14 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.SetNull);
         });
 
+        // SupportTicket
+        modelBuilder.Entity<SupportTicket>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Society).WithMany().HasForeignKey(e => e.SocietyId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.SubmittedByUser).WithMany().HasForeignKey(e => e.SubmittedById).OnDelete(DeleteBehavior.Restrict);
+        });
+
         // Global Query Filters for Multi-Tenant Isolation
         modelBuilder.Entity<Building>().HasQueryFilter(e => _tenantService.IsSuperAdmin || e.SocietyId == (_tenantService.TenantId ?? -1));
         modelBuilder.Entity<Flat>().HasQueryFilter(e => _tenantService.IsSuperAdmin || e.SocietyId == (_tenantService.TenantId ?? -1));
@@ -337,5 +346,6 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<User>().HasQueryFilter(e => _tenantService.IsSuperAdmin || e.SocietyId == _tenantService.TenantId);
         modelBuilder.Entity<AuditLog>().HasQueryFilter(e => _tenantService.IsSuperAdmin || e.SocietyId == _tenantService.TenantId);
+        modelBuilder.Entity<SupportTicket>().HasQueryFilter(e => _tenantService.IsSuperAdmin || e.SocietyId == _tenantService.TenantId);
     }
 }

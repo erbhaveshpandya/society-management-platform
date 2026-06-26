@@ -58,6 +58,9 @@ public class EmergencyAlertDto
     public string Type { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string ReportedByName { get; set; } = string.Empty;
+    public string ReportedByRole { get; set; } = string.Empty;
+    public string FlatNumber { get; set; } = string.Empty;
+    public string BuildingName { get; set; } = string.Empty;
     public DateTime ReportedAt { get; set; }
     public bool IsResolved { get; set; }
 }

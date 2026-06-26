@@ -162,11 +162,17 @@ public class VisitorsController : BaseApiController
         var alerts = await _context.EmergencyAlerts
             .Where(e => e.SocietyId == societyId)
             .Include(e => e.ReportedByUser)
+                .ThenInclude(u => u.ResidentProfile)
+                    .ThenInclude(rp => rp.Flat)
+                        .ThenInclude(f => f.Building)
             .OrderByDescending(e => e.ReportedAt)
             .Select(e => new EmergencyAlertDto
             {
                 Id = e.Id, Type = e.Type.ToString(), Description = e.Description,
                 ReportedByName = e.ReportedByUser.FullName,
+                ReportedByRole = e.ReportedByUser.Role.ToString(),
+                FlatNumber = (e.ReportedByUser.ResidentProfile != null && e.ReportedByUser.ResidentProfile.Flat != null) ? e.ReportedByUser.ResidentProfile.Flat.FlatNumber : string.Empty,
+                BuildingName = (e.ReportedByUser.ResidentProfile != null && e.ReportedByUser.ResidentProfile.Flat != null && e.ReportedByUser.ResidentProfile.Flat.Building != null) ? e.ReportedByUser.ResidentProfile.Flat.Building.Name : string.Empty,
                 ReportedAt = e.ReportedAt, IsResolved = e.IsResolved
             })
             .ToListAsync();
@@ -174,7 +180,7 @@ public class VisitorsController : BaseApiController
     }
 
     [HttpPost("emergency-alerts")]
-    [Authorize(Roles = "SecurityGuard,Resident")]
+    [Authorize(Roles = "SocietyAdmin,SecurityGuard,Resident")]
     public async Task<ActionResult<EmergencyAlertDto>> CreateEmergencyAlert([FromBody] CreateEmergencyAlertRequest request)
     {
         var societyId = GetSocietyId();
@@ -195,6 +201,21 @@ public class VisitorsController : BaseApiController
         await _notificationService.CreateNotificationAsync(societyId.Value, null, $"🚨 Emergency: {request.Type}", request.Description, "Emergency");
 
         return CreatedAtAction(nameof(GetEmergencyAlerts), new EmergencyAlertDto { Id = alert.Id, Type = alert.Type.ToString() });
+    }
+
+    [HttpPost("emergency-alerts/{id}/resolve")]
+    [Authorize(Roles = "SocietyAdmin,SecurityGuard")]
+    public async Task<IActionResult> ResolveEmergencyAlert(int id)
+    {
+        var societyId = GetSocietyId();
+        var alert = await _context.EmergencyAlerts.FirstOrDefaultAsync(e => e.Id == id && e.SocietyId == societyId);
+        if (alert == null) return NotFound();
+        
+        alert.IsResolved = true;
+        await _context.SaveChangesAsync();
+        
+        await _auditLog.LogAsync(societyId, GetUserId(), "EmergencyAlertResolved", "EmergencyAlert", id, $"Emergency Alert {alert.Type} (ID: {id}) was resolved");
+        return Ok(new { message = "Emergency alert resolved successfully" });
     }
 
     // --- Visitor Passes (Pre-Registration) ---

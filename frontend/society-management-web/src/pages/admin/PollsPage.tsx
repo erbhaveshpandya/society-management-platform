@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Poll } from '../../types';
-import { Plus, X, BarChart3, HelpCircle } from 'lucide-react';
+import { Plus, X, BarChart3, HelpCircle, Users } from 'lucide-react';
 
 export const PollsPage: React.FC = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
@@ -17,6 +17,11 @@ export const PollsPage: React.FC = () => {
   const [options, setOptions] = useState<string[]>(['', '']);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [expandedVotes, setExpandedVotes] = useState<{ [pollId: number]: boolean }>({});
+
+  const toggleExpandVotes = (pollId: number) => {
+    setExpandedVotes(prev => ({ ...prev, [pollId]: !prev[pollId] }));
+  };
 
   const fetchPolls = async () => {
     try {
@@ -150,6 +155,45 @@ export const PollsPage: React.FC = () => {
                   <div className="text-right text-xs text-slate-400 font-semibold mt-3">
                     Total Responses: {totalVotes}
                   </div>
+
+                  {/* Responses list */}
+                  {poll.votes && poll.votes.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpandVotes(poll.id)}
+                        className="text-xs font-bold text-primary-600 hover:text-primary-800 flex items-center gap-1.5 focus:outline-none"
+                      >
+                        <Users size={14} />
+                        {expandedVotes[poll.id] ? 'Hide Responses' : `Show Responses (${poll.votes.length})`}
+                      </button>
+                      
+                      {expandedVotes[poll.id] && (
+                        <div className="mt-2 space-y-2 bg-slate-50/50 p-3 rounded-xl border border-slate-100 max-h-48 overflow-y-auto">
+                          {poll.votes.map((v) => (
+                            <div key={v.id} className="flex justify-between items-start text-xs border-b border-slate-100 pb-1.5 last:border-0 last:pb-0">
+                              <div>
+                                <span className="font-bold text-slate-800">{v.voterName}</span>
+                                {v.flatNumber && (
+                                  <span className="text-[10px] text-slate-400 font-semibold ml-1.5">
+                                    ({v.buildingName} - {v.flatNumber})
+                                  </span>
+                                )}
+                                <span className="text-[9px] text-slate-400 font-semibold ml-1.5 bg-slate-100 px-1 py-0.5 rounded uppercase">
+                                  {v.voterRole === 'SocietyAdmin' ? 'Admin' : 
+                                   v.voterRole === 'SecurityGuard' ? 'Guard' : 
+                                   v.voterRole === 'SuperAdmin' ? 'Super Admin' : 'Resident'}
+                                </span>
+                              </div>
+                              <span className="font-semibold text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded text-[10px]">
+                                {v.chosenOptionText}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </>
               );
             })()}

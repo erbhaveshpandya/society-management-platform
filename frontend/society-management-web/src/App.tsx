@@ -41,6 +41,7 @@ import { LiveVisitorsPage } from './pages/security/LiveVisitorsPage';
 import { StaffAttendancePage } from './pages/security/StaffAttendancePage';
 import { WrongParkingPage } from './pages/security/WrongParkingPage';
 import { EmergencyAlertsPage } from './pages/security/EmergencyAlertsPage';
+import { SupportTicketsPage } from './pages/shared/SupportTicketsPage';
 
 function App() {
   return (
@@ -79,6 +80,7 @@ function App() {
               }
             />
             <Route path="users" element={<UserManagementPage />} />
+            <Route path="support-tickets" element={<SupportTicketsPage />} />
           </Route>
 
           {/* Resident Portal Layout */}
@@ -99,6 +101,7 @@ function App() {
             <Route path="vehicles" element={<VehiclesPage />} />
             <Route path="staff" element={<ResidentStaff />} />
             <Route path="visitors" element={<ResidentVisitors />} />
+            <Route path="support-tickets" element={<SupportTicketsPage />} />
           </Route>
 
           {/* Security Guard Portal Layout */}
@@ -116,6 +119,7 @@ function App() {
             <Route path="staff-attendance" element={<StaffAttendancePage />} />
             <Route path="wrong-parking" element={<WrongParkingPage />} />
             <Route path="emergency-alerts" element={<EmergencyAlertsPage />} />
+            <Route path="support-tickets" element={<SupportTicketsPage />} />
           </Route>
 
           {/* Redirect unknown route to login */}

@@ -195,6 +195,7 @@ export interface Poll {
   hasUserVoted?: boolean;
   votedOptionId?: number | null;
   totalVotes?: number;
+  votes?: PollVote[];
 }
 
 export interface PollOption {
@@ -202,6 +203,16 @@ export interface PollOption {
   pollId: number;
   optionText: string;
   voteCount: number;
+}
+
+export interface PollVote {
+  id: number;
+  voterName: string;
+  voterRole: string;
+  flatNumber?: string;
+  buildingName?: string;
+  chosenOptionText: string;
+  votedAt: string;
 }
 
 export interface Amenity {
@@ -289,12 +300,15 @@ export interface ParkingAlert {
 export interface EmergencyAlert {
   id: number;
   societyId: number;
-  type: 'Fire' | 'Theft' | 'Medical' | 'SuspiciousActivity' | 'Other';
+  type: string;
   description: string;
   reportedBy: number;
+  reportedByName: string;
+  reportedByRole: string;
+  flatNumber?: string;
+  buildingName?: string;
   reportedAt: string;
   isResolved: boolean;
-  reporterName?: string;
 }
 
 export interface Notification {
@@ -321,3 +335,21 @@ export interface AuditLog {
   timestamp: string;
   userName?: string;
 }
+
+export interface SupportTicket {
+  id: number;
+  societyId: number | null;
+  societyName: string | null;
+  submittedById: number;
+  submittedByUserName: string;
+  submittedByUserRole: string;
+  subject: string;
+  description: string;
+  category: string;
+  status: 'Open' | 'InProgress' | 'Resolved';
+  createdAt: string;
+  resolvedAt: string | null;
+  resolutionNotes: string | null;
+  attachmentUrl: string | null;
+}
+

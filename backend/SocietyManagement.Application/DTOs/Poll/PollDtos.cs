@@ -16,6 +16,7 @@ public class PollDto
     public bool HasUserVoted { get; set; }
     public int? VotedOptionId { get; set; }
     public List<PollOptionDto> Options { get; set; } = new();
+    public List<PollVoteDto> Votes { get; set; } = new();
 }
 
 public class PollOptionDto
@@ -24,6 +25,17 @@ public class PollOptionDto
     public string OptionText { get; set; } = string.Empty;
     public int VoteCount { get; set; }
     public double Percentage { get; set; }
+}
+
+public class PollVoteDto
+{
+    public int Id { get; set; }
+    public string VoterName { get; set; } = string.Empty;
+    public string VoterRole { get; set; } = string.Empty;
+    public string FlatNumber { get; set; } = string.Empty;
+    public string BuildingName { get; set; } = string.Empty;
+    public string ChosenOptionText { get; set; } = string.Empty;
+    public DateTime VotedAt { get; set; }
 }
 
 public class CreatePollRequest

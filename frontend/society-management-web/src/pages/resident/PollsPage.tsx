@@ -5,13 +5,18 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Poll } from '../../types';
-import { BarChart3, Clock, CheckCircle2, Calendar, HelpCircle, Lock } from 'lucide-react';
+import { BarChart3, Clock, CheckCircle2, Calendar, HelpCircle, Lock, Users } from 'lucide-react';
 
 export const PollsPage: React.FC = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOptions, setSelectedOptions] = useState<{ [pollId: number]: number }>({});
   const [submittingId, setSubmittingId] = useState<number | null>(null);
+  const [expandedVotes, setExpandedVotes] = useState<{ [pollId: number]: boolean }>({});
+
+  const toggleExpandVotes = (pollId: number) => {
+    setExpandedVotes(prev => ({ ...prev, [pollId]: !prev[pollId] }));
+  };
 
   const fetchPolls = async () => {
     try {
@@ -167,6 +172,45 @@ export const PollsPage: React.FC = () => {
                   <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase pl-7">
                     <Lock size={12} />
                     Voting ended. Final choices are displayed.
+                  </div>
+                )}
+
+                {/* Responses list */}
+                {poll.votes && poll.votes.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-slate-100 pl-7 space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleExpandVotes(poll.id)}
+                      className="text-xs font-bold text-primary-600 hover:text-primary-800 flex items-center gap-1.5 focus:outline-none"
+                    >
+                      <Users size={14} />
+                      {expandedVotes[poll.id] ? 'Hide Responses' : `Show Responses (${poll.votes.length})`}
+                    </button>
+                    
+                    {expandedVotes[poll.id] && (
+                      <div className="mt-2 space-y-2 bg-slate-50/50 p-3 rounded-xl border border-slate-100 max-h-48 overflow-y-auto">
+                        {poll.votes.map((v) => (
+                          <div key={v.id} className="flex justify-between items-start text-xs border-b border-slate-100 pb-1.5 last:border-0 last:pb-0">
+                            <div>
+                              <span className="font-bold text-slate-800">{v.voterName}</span>
+                              {v.flatNumber && (
+                                <span className="text-[10px] text-slate-400 font-semibold ml-1.5">
+                                  ({v.buildingName} - {v.flatNumber})
+                                </span>
+                              )}
+                              <span className="text-[9px] text-slate-400 font-semibold ml-1.5 bg-slate-100 px-1 py-0.5 rounded uppercase">
+                                {v.voterRole === 'SocietyAdmin' ? 'Admin' : 
+                                 v.voterRole === 'SecurityGuard' ? 'Guard' : 
+                                 v.voterRole === 'SuperAdmin' ? 'Super Admin' : 'Resident'}
+                              </span>
+                            </div>
+                            <span className="font-semibold text-primary-700 bg-primary-50 px-1.5 py-0.5 rounded text-[10px]">
+                              {v.chosenOptionText}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </Card>

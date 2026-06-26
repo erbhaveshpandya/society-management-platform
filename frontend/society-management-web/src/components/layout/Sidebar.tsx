@@ -20,7 +20,8 @@ import {
   LogOut,
   Building,
   Building2,
-  UserCog
+  UserCog,
+  LifeBuoy
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -45,6 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     { to: '/admin/amenities', label: 'Amenities', icon: Calendar },
     { to: '/admin/staff', label: 'Staff Directory', icon: UserCheck },
     { to: '/admin/visitors', label: 'Visitors Log', icon: Users },
+    { to: '/admin/support-tickets', label: 'Support & Feedback', icon: LifeBuoy },
     { to: '/admin/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -58,6 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     { to: '/resident/vehicles', label: 'My Vehicles', icon: Car },
     { to: '/resident/staff', label: 'Domestic Staff', icon: UserCheck },
     { to: '/resident/visitors', label: 'Visitors', icon: Users },
+    { to: '/resident/support-tickets', label: 'Support & Feedback', icon: LifeBuoy },
   ];
 
   const securityLinks = [
@@ -67,6 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     { to: '/security/staff-attendance', label: 'Staff Attendance', icon: Clock },
     { to: '/security/wrong-parking', label: 'Wrong Parking', icon: Car },
     { to: '/security/emergency-alerts', label: 'Emergency Alerts', icon: ShieldAlert },
+    { to: '/security/support-tickets', label: 'Support & Feedback', icon: LifeBuoy },
   ];
 
   let links = adminLinks;

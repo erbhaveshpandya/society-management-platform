@@ -34,11 +34,67 @@ public static class SeedData
                 CREATE UNIQUE INDEX [IX_VisitorPasses_Passcode] ON [dbo].[VisitorPasses] ([Passcode] ASC);
             END");
 
+        // Ensure SupportTickets table exists
+        context.Database.ExecuteSqlRaw(@"
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[SupportTickets]') AND type in (N'U'))
+            BEGIN
+                CREATE TABLE [dbo].[SupportTickets] (
+                    [Id] INT IDENTITY(1,1) NOT NULL,
+                    [SocietyId] INT NULL,
+                    [SubmittedById] INT NOT NULL,
+                    [Subject] NVARCHAR(200) NOT NULL,
+                    [Description] NVARCHAR(2000) NOT NULL,
+                    [Category] NVARCHAR(100) NOT NULL,
+                    [Status] INT NOT NULL,
+                    [CreatedAt] DATETIME2(7) NOT NULL,
+                    [ResolvedAt] DATETIME2(7) NULL,
+                    [ResolutionNotes] NVARCHAR(2000) NULL,
+                    [AttachmentUrl] NVARCHAR(500) NULL,
+                    CONSTRAINT [PK_SupportTickets] PRIMARY KEY CLUSTERED ([Id] ASC),
+                    CONSTRAINT [FK_SupportTickets_Societies_SocietyId] FOREIGN KEY ([SocietyId]) REFERENCES [dbo].[Societies] ([Id]),
+                    CONSTRAINT [FK_SupportTickets_Users_SubmittedById] FOREIGN KEY ([SubmittedById]) REFERENCES [dbo].[Users] ([Id])
+                );
+            END");
+
+        // Ensure SupportTickets has AttachmentUrl column if table already exists
+        context.Database.ExecuteSqlRaw(@"
+            IF NOT EXISTS (
+                SELECT * FROM sys.columns 
+                WHERE object_id = OBJECT_ID(N'[dbo].[SupportTickets]') 
+                AND name = N'AttachmentUrl'
+            )
+            BEGIN
+                ALTER TABLE [dbo].[SupportTickets] ADD [AttachmentUrl] NVARCHAR(500) NULL;
+            END");
+
         // Update existing old superadmin email if present in database
         var oldSuperAdmin = context.Users.FirstOrDefault(u => u.Email == "superadmin@smp.com");
         if (oldSuperAdmin != null)
         {
             oldSuperAdmin.Email = "superadmin@socivexa.com";
+            context.SaveChanges();
+        }
+
+        // Fix any existing data with SocietyId = 0 due to seeding omissions in previous runs
+        var badPollOptions = context.PollOptions.IgnoreQueryFilters().Where(po => po.SocietyId == 0).ToList();
+        if (badPollOptions.Any())
+        {
+            foreach (var po in badPollOptions)
+            {
+                var poll = context.Polls.IgnoreQueryFilters().FirstOrDefault(p => p.Id == po.PollId);
+                if (poll != null) po.SocietyId = poll.SocietyId;
+            }
+            context.SaveChanges();
+        }
+
+        var badComments = context.ComplaintComments.IgnoreQueryFilters().Where(c => c.SocietyId == 0).ToList();
+        if (badComments.Any())
+        {
+            foreach (var c in badComments)
+            {
+                var complaint = context.Complaints.IgnoreQueryFilters().FirstOrDefault(co => co.Id == c.ComplaintId);
+                if (complaint != null) c.SocietyId = complaint.SocietyId;
+            }
             context.SaveChanges();
         }
 
@@ -199,8 +255,8 @@ public static class SeedData
             // --- Complaint Comments ---
             var comments = new List<ComplaintComment>
             {
-                new() { Id = 1, ComplaintId = 2, UserId = 2, Comment = "We have contacted the elevator maintenance company. They will visit tomorrow.", CreatedAt = DateTime.UtcNow.AddHours(-2) },
-                new() { Id = 2, ComplaintId = 2, UserId = 5, Comment = "Thank you for the update. Please expedite.", CreatedAt = DateTime.UtcNow.AddHours(-1) }
+                new() { Id = 1, SocietyId = 1, ComplaintId = 2, UserId = 2, Comment = "We have contacted the elevator maintenance company. They will visit tomorrow.", CreatedAt = DateTime.UtcNow.AddHours(-2) },
+                new() { Id = 2, SocietyId = 1, ComplaintId = 2, UserId = 5, Comment = "Thank you for the update. Please expedite.", CreatedAt = DateTime.UtcNow.AddHours(-1) }
             };
             context.Database.ExecuteSqlRaw("SET IDENTITY_INSERT ComplaintComments ON");
             context.ComplaintComments.AddRange(comments);
@@ -233,12 +289,12 @@ public static class SeedData
             // --- Poll Options ---
             var pollOptions = new List<PollOption>
             {
-                new() { Id = 1, PollId = 1, OptionText = "Yes, install cameras", VoteCount = 3 },
-                new() { Id = 2, PollId = 1, OptionText = "No, not needed", VoteCount = 1 },
-                new() { Id = 3, PollId = 1, OptionText = "Yes, but only at entry/exit points", VoteCount = 2 },
-                new() { Id = 4, PollId = 2, OptionText = "6:00 PM - 7:00 PM", VoteCount = 2 },
-                new() { Id = 5, PollId = 2, OptionText = "7:00 PM - 8:00 PM", VoteCount = 1 },
-                new() { Id = 6, PollId = 2, OptionText = "8:00 PM - 9:00 PM", VoteCount = 0 },
+                new() { Id = 1, SocietyId = 1, PollId = 1, OptionText = "Yes, install cameras", VoteCount = 3 },
+                new() { Id = 2, SocietyId = 1, PollId = 1, OptionText = "No, not needed", VoteCount = 1 },
+                new() { Id = 3, SocietyId = 1, PollId = 1, OptionText = "Yes, but only at entry/exit points", VoteCount = 2 },
+                new() { Id = 4, SocietyId = 1, PollId = 2, OptionText = "6:00 PM - 7:00 PM", VoteCount = 2 },
+                new() { Id = 5, SocietyId = 1, PollId = 2, OptionText = "7:00 PM - 8:00 PM", VoteCount = 1 },
+                new() { Id = 6, SocietyId = 1, PollId = 2, OptionText = "8:00 PM - 9:00 PM", VoteCount = 0 },
             };
             context.Database.ExecuteSqlRaw("SET IDENTITY_INSERT PollOptions ON");
             context.PollOptions.AddRange(pollOptions);

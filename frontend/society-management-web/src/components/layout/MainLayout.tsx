@@ -12,6 +12,9 @@ interface EmergencyAlert {
   type: string;
   description: string;
   reportedByName: string;
+  reportedByRole: string;
+  flatNumber?: string;
+  buildingName?: string;
   reportedAt: string;
   isResolved: boolean;
 }
@@ -22,27 +25,40 @@ export const MainLayout: React.FC = () => {
 
   // SOS Alarm Monitoring states
   const [activeAlert, setActiveAlert] = useState<EmergencyAlert | null>(null);
+  const [residentEmergency, setResidentEmergency] = useState<EmergencyAlert | null>(null);
   const [acknowledgedIds, setAcknowledgedIds] = useState<number[]>([]);
   const [isMuted, setIsMuted] = useState(false);
 
   const audioIntervalRef = useRef<any>(null);
 
-  // Background polling for guards
+  // Background polling for emergencies
   useEffect(() => {
-    if (user?.role !== 'SecurityGuard') return;
+    if (!user) return;
 
     const checkEmergencies = async () => {
       try {
         const res = await axiosClient.get<EmergencyAlert[]>('emergency-alerts');
-        // Find latest unresolved alert that hasn't been acknowledged locally yet
+        // Find latest unresolved alert
         const unresolved = res.data.find(
-          (alert) => !alert.isResolved && !acknowledgedIds.includes(alert.id)
+          (alert) => !alert.isResolved
         );
 
         if (unresolved) {
-          setActiveAlert(unresolved);
+          // If guard or admin, show overlay if they haven't acknowledged it locally yet
+          if ((user.role === 'SecurityGuard' || user.role === 'SocietyAdmin') && !acknowledgedIds.includes(unresolved.id)) {
+            setActiveAlert(unresolved);
+          } else {
+            setActiveAlert(null);
+          }
+          // For residents, set the active alert so we can show the banner
+          if (user.role === 'Resident') {
+            setResidentEmergency(unresolved);
+          } else {
+            setResidentEmergency(null);
+          }
         } else {
           setActiveAlert(null);
+          setResidentEmergency(null);
         }
       } catch (err) {
         console.error('Failed to poll emergency alerts:', err);
@@ -95,8 +111,13 @@ export const MainLayout: React.FC = () => {
     };
   }, [activeAlert, isMuted]);
 
-  const handleAcknowledge = () => {
+  const handleAcknowledge = async () => {
     if (activeAlert) {
+      try {
+        await axiosClient.post(`emergency-alerts/${activeAlert.id}/resolve`);
+      } catch (err) {
+        console.warn('Failed to mark SOS as resolved in database:', err);
+      }
       setAcknowledgedIds([...acknowledgedIds, activeAlert.id]);
       setActiveAlert(null);
       setIsMuted(false);
@@ -128,6 +149,18 @@ export const MainLayout: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header onMenuClick={() => setMobileMenuOpen(true)} />
+
+        {/* Pulsing Resident Warning Banner */}
+        {residentEmergency && (
+          <div className="bg-gradient-to-r from-red-600 to-rose-700 text-white text-xs font-black py-3 px-6 text-center animate-pulse flex items-center justify-center gap-2 shadow-md border-b border-red-700">
+            <span className="text-sm">🚨</span>
+            <span className="tracking-wide uppercase">
+              ACTIVE EMERGENCY: {residentEmergency.type.replace(/([A-Z])/g, ' $1').toUpperCase()} reported by {residentEmergency.reportedByName}
+              {residentEmergency.flatNumber ? ` (Flat ${residentEmergency.flatNumber})` : ''} - "{residentEmergency.description}"
+            </span>
+          </div>
+        )}
+
         <main className="flex-1 overflow-y-auto p-6 md:p-8">
           <Outlet />
         </main>
@@ -157,6 +190,22 @@ export const MainLayout: React.FC = () => {
                 <span className="text-xs text-slate-400 font-bold uppercase">Reported By</span>
                 <span className="col-span-2 font-bold text-slate-800">{activeAlert.reportedByName}</span>
               </div>
+              <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-2.5">
+                <span className="text-xs text-slate-400 font-bold uppercase">User Role</span>
+                <span className="col-span-2 font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-xs inline-block w-fit">
+                  {activeAlert.reportedByRole === 'SocietyAdmin' ? 'Society Admin' : 
+                   activeAlert.reportedByRole === 'SecurityGuard' ? 'Security Guard' : 
+                   activeAlert.reportedByRole === 'SuperAdmin' ? 'System Super Admin' : 'Resident'}
+                </span>
+              </div>
+              {activeAlert.flatNumber && (
+                <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-2.5">
+                  <span className="text-xs text-slate-400 font-bold uppercase">Flat / Location</span>
+                  <span className="col-span-2 font-black text-slate-800">
+                    {activeAlert.buildingName} - Flat {activeAlert.flatNumber}
+                  </span>
+                </div>
+              )}
               <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-2.5">
                 <span className="text-xs text-slate-400 font-bold uppercase">Alert Category</span>
                 <span className="col-span-2 font-black text-red-600 uppercase tracking-wide">
