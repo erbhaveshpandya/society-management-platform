@@ -238,7 +238,7 @@ export const EmergencyAlertsPage: React.FC = () => {
         <h3 className="text-sm font-bold text-slate-800 p-4 border-b border-slate-100 flex items-center gap-2">
           <Clock size={16} className="text-slate-500" /> Broadcast Alarm Logs
         </h3>
-        <Table headers={['Emergency Type', 'Broadcast Description', 'Reporter Guard', 'Timestamp']}>
+        <Table headers={['Emergency Type', 'Broadcast Description', 'Reported By', 'Role', 'Flat / Location', 'Timestamp']}>
           {alerts.length > 0 ? (
             alerts.map((alert) => (
               <tr key={alert.id} className="hover:bg-slate-50/50 transition-colors">
@@ -258,8 +258,18 @@ export const EmergencyAlertsPage: React.FC = () => {
                 <td className="px-6 py-4 text-xs font-medium text-slate-700 leading-relaxed max-w-md">
                   {alert.description}
                 </td>
-                <td className="px-6 py-4 font-semibold text-slate-600 text-xs">
-                  {alert.reporterName || 'System Guard'}
+                <td className="px-6 py-4 font-semibold text-slate-700 text-xs">
+                  {alert.reportedByName || 'System Guard'}
+                </td>
+                <td className="px-6 py-4 text-xs">
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 uppercase">
+                    {alert.reportedByRole === 'SocietyAdmin' ? 'Admin' : 
+                     alert.reportedByRole === 'SecurityGuard' ? 'Guard' : 
+                     alert.reportedByRole === 'SuperAdmin' ? 'Super Admin' : 'Resident'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 font-bold text-slate-700 text-xs">
+                  {alert.flatNumber ? `${alert.buildingName} - ${alert.flatNumber}` : 'Main Gate / General'}
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-xs font-bold text-slate-700 block">
@@ -273,7 +283,7 @@ export const EmergencyAlertsPage: React.FC = () => {
             ))
           ) : (
             <tr>
-              <td colSpan={4} className="text-center py-10">
+              <td colSpan={6} className="text-center py-10">
                 <div className="flex flex-col items-center justify-center p-8 bg-slate-50 max-w-sm mx-auto my-4 rounded-lg border border-dashed border-slate-200">
                   <Radio size={36} className="text-slate-300 mb-2" />
                   <p className="text-sm font-semibold text-slate-600">No Alarms Broadcasted</p>

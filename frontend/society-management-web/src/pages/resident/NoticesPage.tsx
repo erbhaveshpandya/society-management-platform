@@ -131,7 +131,7 @@ export const NoticesPage: React.FC = () => {
               </div>
 
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-semibold uppercase">
-                <span>By: {notice.creatorName || 'Society Management'}</span>
+                <span>By: {notice.creatorName || 'Socivexa'}</span>
                 <span>Active notice</span>
               </div>
             </Card>

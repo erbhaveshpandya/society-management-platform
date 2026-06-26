@@ -65,10 +65,10 @@ export const LoginPage: React.FC = () => {
             <Home size={32} />
           </div>
           <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">
-            SOCIETY MANAGEMENT
+            SOCIVEXA
           </h2>
-          <p className="text-sm text-slate-500 font-medium mt-1">
-            Sign in to access your dashboard
+          <p className="text-xs text-slate-500 font-semibold mt-1">
+            Smart Society Living, Simplified.
           </p>
         </div>
 
@@ -132,7 +132,7 @@ export const LoginPage: React.FC = () => {
               </div>
               <div className="p-2 bg-slate-50 rounded-lg border border-slate-100/50">
                 <p className="font-semibold text-slate-800 mb-0.5">Super Admin</p>
-                <p className="font-mono text-slate-400">superadmin@smp.com</p>
+                <p className="font-mono text-slate-400">superadmin@socivexa.com</p>
                 <p className="font-mono text-slate-400">Password123!</p>
               </div>
             </div>

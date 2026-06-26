@@ -7,6 +7,8 @@ export const NotificationBell: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const unreadNotifications = notifications.filter(n => !n.isRead);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -49,12 +51,12 @@ export const NotificationBell: React.FC = () => {
             )}
           </div>
           <div className="max-h-64 overflow-y-auto divide-y divide-slate-50">
-            {notifications.length === 0 ? (
+            {unreadNotifications.length === 0 ? (
               <div className="px-4 py-6 text-center text-xs text-slate-400">
                 No notifications
               </div>
             ) : (
-              notifications.map((n) => (
+              unreadNotifications.map((n) => (
                 <div
                   key={n.id}
                   onClick={() => {

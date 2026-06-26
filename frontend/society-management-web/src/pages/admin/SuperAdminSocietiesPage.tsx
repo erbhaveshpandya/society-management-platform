@@ -104,7 +104,7 @@ export const SuperAdminSocietiesPage: React.FC = () => {
     <div className="space-y-6 text-left">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Society Management</h2>
+          <h2 className="text-xl font-bold text-slate-800">Manage Societies</h2>
           <p className="text-xs text-slate-500 mt-1">
             Register new housing societies, manage tenants, and monitor community metrics across all registered communities.
           </p>

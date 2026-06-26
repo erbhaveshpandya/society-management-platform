@@ -162,11 +162,17 @@ public class VisitorsController : BaseApiController
         var alerts = await _context.EmergencyAlerts
             .Where(e => e.SocietyId == societyId)
             .Include(e => e.ReportedByUser)
+                .ThenInclude(u => u.ResidentProfile)
+                    .ThenInclude(rp => rp.Flat)
+                        .ThenInclude(f => f.Building)
             .OrderByDescending(e => e.ReportedAt)
             .Select(e => new EmergencyAlertDto
             {
                 Id = e.Id, Type = e.Type.ToString(), Description = e.Description,
                 ReportedByName = e.ReportedByUser.FullName,
+                ReportedByRole = e.ReportedByUser.Role.ToString(),
+                FlatNumber = (e.ReportedByUser.ResidentProfile != null && e.ReportedByUser.ResidentProfile.Flat != null) ? e.ReportedByUser.ResidentProfile.Flat.FlatNumber : string.Empty,
+                BuildingName = (e.ReportedByUser.ResidentProfile != null && e.ReportedByUser.ResidentProfile.Flat != null && e.ReportedByUser.ResidentProfile.Flat.Building != null) ? e.ReportedByUser.ResidentProfile.Flat.Building.Name : string.Empty,
                 ReportedAt = e.ReportedAt, IsResolved = e.IsResolved
             })
             .ToListAsync();
@@ -174,7 +180,7 @@ public class VisitorsController : BaseApiController
     }
 
     [HttpPost("emergency-alerts")]
-    [Authorize(Roles = "SecurityGuard")]
+    [Authorize(Roles = "SocietyAdmin,SecurityGuard,Resident")]
     public async Task<ActionResult<EmergencyAlertDto>> CreateEmergencyAlert([FromBody] CreateEmergencyAlertRequest request)
     {
         var societyId = GetSocietyId();
@@ -196,4 +202,166 @@ public class VisitorsController : BaseApiController
 
         return CreatedAtAction(nameof(GetEmergencyAlerts), new EmergencyAlertDto { Id = alert.Id, Type = alert.Type.ToString() });
     }
+
+    [HttpPost("emergency-alerts/{id}/resolve")]
+    [Authorize(Roles = "SocietyAdmin,SecurityGuard")]
+    public async Task<IActionResult> ResolveEmergencyAlert(int id)
+    {
+        var societyId = GetSocietyId();
+        var alert = await _context.EmergencyAlerts.FirstOrDefaultAsync(e => e.Id == id && e.SocietyId == societyId);
+        if (alert == null) return NotFound();
+        
+        alert.IsResolved = true;
+        await _context.SaveChangesAsync();
+        
+        await _auditLog.LogAsync(societyId, GetUserId(), "EmergencyAlertResolved", "EmergencyAlert", id, $"Emergency Alert {alert.Type} (ID: {id}) was resolved");
+        return Ok(new { message = "Emergency alert resolved successfully" });
+    }
+
+    // --- Visitor Passes (Pre-Registration) ---
+
+    [HttpGet("visitors/pre-registered")]
+    [Authorize(Roles = "SuperAdmin,SocietyAdmin,Resident")]
+    public async Task<ActionResult<IEnumerable<VisitorPassDto>>> GetPreRegisteredPasses()
+    {
+        var societyId = GetSocietyId();
+        if (societyId == null) return Forbid();
+        var role = User.FindFirst(ClaimTypes.Role)!.Value;
+        var userId = GetUserId();
+
+        var query = _context.VisitorPasses
+            .Where(p => p.SocietyId == societyId && !p.IsUsed && !p.IsRevoked)
+            .Include(p => p.Flat)
+            .AsQueryable();
+
+        if (role == "Resident")
+        {
+            var profile = await _context.ResidentProfiles.FirstOrDefaultAsync(r => r.UserId == userId && r.SocietyId == societyId);
+            if (profile != null)
+            {
+                query = query.Where(p => p.FlatId == profile.FlatId);
+            }
+            else
+            {
+                return Ok(Enumerable.Empty<VisitorPassDto>());
+            }
+        }
+
+        var passes = await query.OrderByDescending(p => p.ExpectedDate)
+            .Select(p => new VisitorPassDto
+            {
+                Id = p.Id, SocietyId = p.SocietyId, VisitorName = p.VisitorName,
+                Phone = p.Phone, VehicleNumber = p.VehicleNumber,
+                FlatId = p.FlatId, FlatNumber = p.Flat.FlatNumber,
+                Purpose = p.Purpose, ExpectedDate = p.ExpectedDate,
+                Passcode = p.Passcode, IsUsed = p.IsUsed,
+                IsRevoked = p.IsRevoked, CreatedAt = p.CreatedAt
+            })
+            .ToListAsync();
+        return Ok(passes);
+    }
+
+    [HttpPost("visitors/pre-register")]
+    [Authorize(Roles = "SuperAdmin,SocietyAdmin,Resident")]
+    public async Task<ActionResult<VisitorPassDto>> PreRegisterVisitor([FromBody] PreRegisterVisitorRequest request)
+    {
+        var societyId = GetSocietyId();
+        if (societyId == null) return Forbid();
+
+        var passcode = $"INV-{new Random().Next(100000, 999999)}";
+        while (await _context.VisitorPasses.AnyAsync(p => p.Passcode == passcode))
+        {
+            passcode = $"INV-{new Random().Next(100000, 999999)}";
+        }
+
+        var pass = new VisitorPass
+        {
+            SocietyId = societyId.Value, VisitorName = request.VisitorName,
+            Phone = request.Phone, VehicleNumber = request.VehicleNumber,
+            FlatId = request.FlatId, Purpose = request.Purpose,
+            ExpectedDate = request.ExpectedDate, Passcode = passcode,
+            IsUsed = false, IsRevoked = false, CreatedAt = DateTime.UtcNow
+        };
+        _context.VisitorPasses.Add(pass);
+        await _context.SaveChangesAsync();
+
+        var flat = await _context.Flats.FirstOrDefaultAsync(f => f.Id == request.FlatId);
+        await _auditLog.LogAsync(societyId, GetUserId(), "VisitorPreRegistered", "VisitorPass", pass.Id, $"Pass generated for guest {pass.VisitorName} visiting Flat {flat?.FlatNumber ?? "N/A"}");
+
+        return Ok(new VisitorPassDto
+        {
+            Id = pass.Id, SocietyId = pass.SocietyId, VisitorName = pass.VisitorName,
+            Phone = pass.Phone, VehicleNumber = pass.VehicleNumber,
+            FlatId = pass.FlatId, FlatNumber = flat?.FlatNumber ?? "N/A",
+            Purpose = pass.Purpose, ExpectedDate = pass.ExpectedDate,
+            Passcode = pass.Passcode, IsUsed = pass.IsUsed,
+            IsRevoked = pass.IsRevoked, CreatedAt = pass.CreatedAt
+        });
+    }
+
+    [HttpDelete("visitors/pre-registered/{id}")]
+    [Authorize(Roles = "SuperAdmin,SocietyAdmin,Resident")]
+    public async Task<IActionResult> RevokePreRegisteredPass(int id)
+    {
+        var societyId = GetSocietyId();
+        var pass = await _context.VisitorPasses.FirstOrDefaultAsync(p => p.Id == id && p.SocietyId == societyId);
+        if (pass == null) return NotFound("Pass not found");
+
+        if (pass.IsUsed) return BadRequest("Pass has already been used");
+        if (pass.IsRevoked) return BadRequest("Pass has already been revoked");
+
+        pass.IsRevoked = true;
+        await _context.SaveChangesAsync();
+
+        await _auditLog.LogAsync(societyId, GetUserId(), "VisitorPassRevoked", "VisitorPass", id, $"Pass revoked for guest {pass.VisitorName}");
+        return Ok(new { message = "Visitor invitation pass revoked successfully" });
+    }
+
+    [HttpPost("visitors/verify-pass")]
+    [Authorize(Roles = "SecurityGuard")]
+    public async Task<ActionResult<VisitorLogDto>> VerifyAndCheckInPass([FromBody] VerifyPasscodeRequest request)
+    {
+        var societyId = GetSocietyId();
+        if (societyId == null) return Forbid();
+
+        var pass = await _context.VisitorPasses
+            .Include(p => p.Flat)
+            .FirstOrDefaultAsync(p => p.Passcode == request.Passcode && p.SocietyId == societyId);
+
+        if (pass == null) return NotFound(new { message = "Invalid passcode. Pass not found." });
+        if (pass.IsUsed) return BadRequest(new { message = "This gate pass has already been used." });
+        if (pass.IsRevoked) return BadRequest(new { message = "This gate pass has been revoked by the resident." });
+
+        var visitor = new VisitorLog
+        {
+            SocietyId = societyId.Value, VisitorName = pass.VisitorName,
+            Phone = pass.Phone, VehicleNumber = pass.VehicleNumber ?? string.Empty,
+            FlatId = pass.FlatId, Purpose = $"{pass.Purpose} (Pass: {pass.Passcode})",
+            CheckedInBy = GetUserId(), EntryTime = DateTime.UtcNow,
+            IsActive = true
+        };
+        _context.VisitorLogs.Add(visitor);
+        pass.IsUsed = true;
+        await _context.SaveChangesAsync();
+
+        if (pass.Flat?.OwnerId != null)
+        {
+            await _notificationService.CreateNotificationAsync(societyId.Value, pass.Flat.OwnerId.Value, "Visitor Checked In (Pass)", $"Guest {pass.VisitorName} has checked in using gate pass {pass.Passcode}.", "Visitor");
+        }
+
+        var guardUser = await _context.Users.FindAsync(GetUserId());
+        var guardName = guardUser?.FullName ?? "Security Guard";
+
+        await _auditLog.LogAsync(societyId, GetUserId(), "VisitorCheckedInViaPass", "VisitorLog", visitor.Id, $"Visitor {pass.VisitorName} checked in using passcode {pass.Passcode}");
+
+        return Ok(new VisitorLogDto
+        {
+            Id = visitor.Id, SocietyId = visitor.SocietyId, VisitorName = visitor.VisitorName,
+            Phone = visitor.Phone, VehicleNumber = visitor.VehicleNumber,
+            FlatId = visitor.FlatId, FlatNumber = pass.Flat != null ? pass.Flat.FlatNumber : string.Empty,
+            Purpose = visitor.Purpose, EntryTime = visitor.EntryTime,
+            IsActive = visitor.IsActive, CheckedInByName = guardName
+        });
+    }
 }
+

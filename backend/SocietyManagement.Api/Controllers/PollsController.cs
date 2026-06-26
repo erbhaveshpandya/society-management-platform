@@ -53,6 +53,16 @@ public class PollsController : BaseApiController
                     Id = o.Id, OptionText = o.OptionText, VoteCount = o.VoteCount,
                     Percentage = p.Options.Sum(x => x.VoteCount) > 0
                         ? Math.Round((double)o.VoteCount / p.Options.Sum(x => x.VoteCount) * 100, 1) : 0
+                }).ToList(),
+                Votes = p.Votes.Select(v => new PollVoteDto
+                {
+                    Id = v.Id,
+                    VoterName = v.User.FullName,
+                    VoterRole = v.User.Role.ToString(),
+                    FlatNumber = v.User.ResidentProfile != null ? v.User.ResidentProfile.Flat.FlatNumber : string.Empty,
+                    BuildingName = v.User.ResidentProfile != null ? v.User.ResidentProfile.Flat.Building.Name : string.Empty,
+                    ChosenOptionText = v.PollOption.OptionText,
+                    VotedAt = v.VotedAt
                 }).ToList()
             })
             .ToListAsync();
