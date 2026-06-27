@@ -80,7 +80,7 @@ export const AppNavigator: React.FC = () => {
 
       if (!soundRef.current) {
         const { sound } = await Audio.Sound.createAsync(
-          { uri: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav' }, // Warning siren buzzer sfx
+          { uri: 'https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg' }, // Google Actions Alarm Clock sound
           { shouldPlay: true, isLooping: true, volume: 1.0 }
         );
         soundRef.current = sound;
