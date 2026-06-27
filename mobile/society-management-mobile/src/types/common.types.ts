@@ -40,6 +40,9 @@ export interface EmergencyAlert {
   type: string;
   description: string;
   reportedByName: string;
+  reportedByRole?: string;
+  flatNumber?: string;
+  buildingName?: string;
   reportedAt: string;
   isResolved: boolean;
 }
