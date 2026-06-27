@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Alert, ActivityIndicator, Vibration } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthStack } from './AuthStack';
 import { ResidentStack } from './ResidentStack';
@@ -21,6 +22,7 @@ export const AppNavigator: React.FC = () => {
   const [residentEmergency, setResidentEmergency] = useState<EmergencyAlert | null>(null);
   const [acknowledgedIds, setAcknowledgedIds] = useState<number[]>([]);
   const [isResolving, setIsResolving] = useState(false);
+  const soundRef = useRef<Audio.Sound | null>(null);
 
   // Background polling for emergencies
   useEffect(() => {
@@ -65,6 +67,61 @@ export const AppNavigator: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [token, user, acknowledgedIds]);
+
+  // Handle playing and stopping siren sound
+  const playSiren = async () => {
+    try {
+      // Set audio options for playback on device speaker
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: true,
+        playThroughEarpieceAndroid: false,
+      });
+
+      if (!soundRef.current) {
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav' }, // Warning siren buzzer sfx
+          { shouldPlay: true, isLooping: true, volume: 1.0 }
+        );
+        soundRef.current = sound;
+      } else {
+        await soundRef.current.playAsync();
+      }
+    } catch (err) {
+      console.warn('Failed to play mobile siren:', err);
+    }
+  };
+
+  const stopSiren = async () => {
+    try {
+      if (soundRef.current) {
+        await soundRef.current.stopAsync();
+        await soundRef.current.unloadAsync();
+        soundRef.current = null;
+      }
+    } catch (err) {
+      console.warn('Failed to stop mobile siren:', err);
+    }
+  };
+
+  // Trigger siren audio and vibration feedback
+  useEffect(() => {
+    const hasEmergency = activeAlert !== null || residentEmergency !== null;
+    
+    if (hasEmergency) {
+      // Vibrate continuously: [wait 500ms, vibrate 500ms]
+      Vibration.vibrate([500, 500], true);
+      playSiren();
+    } else {
+      Vibration.cancel();
+      stopSiren();
+    }
+
+    return () => {
+      Vibration.cancel();
+      stopSiren();
+    };
+  }, [activeAlert, residentEmergency]);
 
   const handleAcknowledge = async () => {
     if (activeAlert) {
@@ -113,7 +170,7 @@ export const AppNavigator: React.FC = () => {
       {residentEmergency && (
         <SafeAreaView style={styles.residentEmergencyBanner} edges={['top']}>
           <View style={styles.bannerContent}>
-            <Ionicons name="warning" size={20} color="#FFFFFF" style={styles.flashingIcon} />
+            <Ionicons name="warning" size={20} color="#FFFFFF" />
             <Text style={styles.bannerText}>
               ACTIVE SOS: {residentEmergency.type.toUpperCase()} alert reported by {residentEmergency.reportedByName}
               {residentEmergency.flatNumber ? ` (Flat ${residentEmergency.flatNumber})` : ''} - "{residentEmergency.description}"
@@ -208,9 +265,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 10,
-  },
-  flashingIcon: {
-    // Basic icon marker
   },
   bannerText: {
     color: '#FFFFFF',
