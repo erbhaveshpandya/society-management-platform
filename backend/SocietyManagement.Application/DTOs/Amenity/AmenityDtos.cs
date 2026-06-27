@@ -56,3 +56,11 @@ public class UpdateBookingStatusRequest
     [Required]
     public string Status { get; set; } = string.Empty;
 }
+
+public class OccupiedSlotDto
+{
+    public int AmenityId { get; set; }
+    public DateTime BookingDate { get; set; }
+    public string TimeSlot { get; set; } = string.Empty;
+}
+

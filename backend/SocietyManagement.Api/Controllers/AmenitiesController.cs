@@ -90,6 +90,25 @@ public class AmenitiesController : BaseApiController
         return Ok(bookings);
     }
 
+    [HttpGet("bookings/occupied")]
+    public async Task<ActionResult<IEnumerable<OccupiedSlotDto>>> GetOccupiedSlots()
+    {
+        var societyId = GetSocietyId();
+        if (societyId == null) return Forbid();
+
+        var occupied = await _context.AmenityBookings
+            .Where(b => b.SocietyId == societyId && b.Status != BookingStatus.Rejected && b.Status != BookingStatus.Cancelled)
+            .Select(b => new OccupiedSlotDto
+            {
+                AmenityId = b.AmenityId,
+                BookingDate = b.BookingDate,
+                TimeSlot = b.TimeSlot
+            })
+            .ToListAsync();
+
+        return Ok(occupied);
+    }
+
     [HttpPost("bookings")]
     [Authorize(Roles = "Resident")]
     public async Task<ActionResult<BookingDto>> CreateBooking([FromBody] CreateBookingRequest request)

@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { KpiCard } from '../../components/shared/KpiCard';
 import { Card } from '../../components/ui/Card';
+import { Modal } from '../../components/ui/Modal';
+import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { DollarSign, MessageSquare, Users, Building, Activity } from 'lucide-react';
+import { DollarSign, MessageSquare, Users, Building, Activity, Siren, Flame, ShieldAlert, AlertTriangle } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -34,6 +36,38 @@ export const DashboardPage: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // SOS state
+  const [isSosOpen, setIsSosOpen] = useState(false);
+  const [sosType, setSosType] = useState('MedicalEmergency');
+  const [sosDescription, setSosDescription] = useState('');
+  const [sosSubmitting, setSosSubmitting] = useState(false);
+  const [sosSuccess, setSosSuccess] = useState('');
+
+  const handleTriggerSOS = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSosSubmitting(true);
+    setSosSuccess('');
+
+    try {
+      const desc = sosDescription.trim() || `SOS Panic Alert triggered by Society Admin`;
+      await axiosClient.post('emergency-alerts', {
+        type: sosType,
+        description: desc
+      });
+      setSosSuccess('🚨 Emergency SOS alert broadcasted! Security guards and residents have been notified.');
+      setSosDescription('');
+      setTimeout(() => {
+        setIsSosOpen(false);
+        setSosSuccess('');
+      }, 5000);
+    } catch (err) {
+      console.error('Failed to trigger panic alert:', err);
+      alert('Failed to trigger panic alert. Please try again.');
+    } finally {
+      setSosSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
@@ -55,9 +89,17 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6 text-left">
-      <div>
-        <h2 className="text-xl font-bold text-slate-800">Admin Dashboard</h2>
-        <p className="text-xs text-slate-500 mt-1">Real-time statistics and overview of your housing society.</p>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+        <div>
+          <h2 className="text-xl font-bold text-slate-800">Admin Dashboard</h2>
+          <p className="text-xs text-slate-500 mt-1">Real-time statistics and overview of your housing society.</p>
+        </div>
+        <button
+          onClick={() => setIsSosOpen(true)}
+          className="mt-3 sm:mt-0 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-md flex items-center gap-1.5 shrink-0 self-start sm:self-center transition-colors transition-transform active:scale-95"
+        >
+          <Siren size={15} className="animate-pulse" /> Trigger SOS Alarm
+        </button>
       </div>
 
       {/* KPI Cards */}
@@ -229,6 +271,93 @@ export const DashboardPage: React.FC = () => {
           </div>
         </Card>
       </div>
+
+      {/* SOS TRIGGER SELECTION MODAL */}
+      <Modal
+        isOpen={isSosOpen}
+        onClose={() => !sosSubmitting && setIsSosOpen(false)}
+        title="⚠️ Trigger Security SOS Alarm"
+      >
+        <form onSubmit={handleTriggerSOS} className="space-y-4 text-left">
+          {sosSuccess ? (
+            <div className="p-4 bg-red-600 border border-red-700 text-white text-xs font-bold rounded-lg flex items-center gap-2.5 animate-pulse">
+              <Siren size={20} />
+              <span>{sosSuccess}</span>
+            </div>
+          ) : (
+            <>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2.5">
+                <AlertTriangle className="text-amber-600 shrink-0 mt-0.5" size={16} />
+                <p className="text-[10px] text-slate-600 leading-relaxed">
+                  <strong>WARNING:</strong> This will sound an alarm alert at the security gate room. Use ONLY in genuine emergencies. Abuse is subject to society panel penalties.
+                </p>
+              </div>
+
+              <div className="text-left space-y-1.5">
+                <label className="block text-xs font-bold text-slate-600 uppercase">Emergency Category</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSosType('MedicalEmergency')}
+                    className={`p-3 rounded-lg border flex flex-col items-center gap-1.5 transition-all text-xs font-semibold ${
+                      sosType === 'MedicalEmergency'
+                        ? 'border-red-500 bg-red-50/30 text-red-600'
+                        : 'border-slate-100 hover:bg-slate-50 text-slate-500'
+                    }`}
+                  >
+                    <Siren size={16} />
+                    <span>Medical</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSosType('Fire')}
+                    className={`p-3 rounded-lg border flex flex-col items-center gap-1.5 transition-all text-xs font-semibold ${
+                      sosType === 'Fire'
+                        ? 'border-red-500 bg-red-50/30 text-red-600'
+                        : 'border-slate-100 hover:bg-slate-50 text-slate-500'
+                    }`}
+                  >
+                    <Flame size={16} />
+                    <span>Fire Alert</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSosType('Theft')}
+                    className={`p-3 rounded-lg border flex flex-col items-center gap-1.5 transition-all text-xs font-semibold ${
+                      sosType === 'Theft'
+                        ? 'border-red-500 bg-red-50/30 text-red-600'
+                        : 'border-slate-100 hover:bg-slate-50 text-slate-500'
+                    }`}
+                  >
+                    <ShieldAlert size={16} />
+                    <span>Security</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-left space-y-1">
+                <label className="block text-xs font-bold text-slate-600 uppercase">Additional Info (Optional)</label>
+                <textarea
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-100 text-xs bg-white h-20 leading-relaxed text-slate-700"
+                  placeholder="e.g. Fire on balcony, Suspicious person in lobby..."
+                  value={sosDescription}
+                  onChange={(e) => setSosDescription(e.target.value)}
+                  disabled={sosSubmitting}
+                />
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                <Button variant="outline" type="button" onClick={() => setIsSosOpen(false)} disabled={sosSubmitting}>
+                  Cancel
+                </Button>
+                <Button variant="primary" type="submit" disabled={sosSubmitting} className="bg-red-600 hover:bg-red-700 text-white font-bold">
+                  {sosSubmitting ? 'Broadcasting...' : 'ACTIVATE ALARM NOW'}
+                </Button>
+              </div>
+            </>
+          )}
+        </form>
+      </Modal>
     </div>
   );
 };

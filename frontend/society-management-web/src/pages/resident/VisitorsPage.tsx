@@ -11,7 +11,7 @@ import { Flat, VisitorLog } from '../../types';
 import { User, Phone, CheckCircle, Clock, Calendar, QrCode, ClipboardCheck, Plus, List, ArrowRight } from 'lucide-react';
 
 interface PreRegisteredPass {
-  id: string;
+  id: number;
   visitorName: string;
   phone: string;
   vehicleNumber?: string;
@@ -31,6 +31,7 @@ export const VisitorsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'logs' | 'preregister' | 'passes'>('logs');
   const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const [formData, setFormData] = useState({
     visitorName: '',
@@ -45,19 +46,15 @@ export const VisitorsPage: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [visitorsRes, flatsRes] = await Promise.all([
+      const [visitorsRes, flatsRes, passesRes] = await Promise.all([
         axiosClient.get<VisitorLog[]>('visitors'),
-        axiosClient.get<Flat[]>('flats')
+        axiosClient.get<Flat[]>('flats'),
+        axiosClient.get<PreRegisteredPass[]>('visitors/pre-registered')
       ]);
 
       setVisitorLogs(visitorsRes.data);
       setFlats(flatsRes.data);
-
-      // Load pre-registered passes from local storage
-      const savedPasses = localStorage.getItem(`preregistered_passes_${user?.id}`);
-      if (savedPasses) {
-        setPreRegistered(JSON.parse(savedPasses));
-      }
+      setPreRegistered(passesRes.data);
     } catch (err) {
       console.error('Failed to load visitors data:', err);
     } finally {
@@ -81,39 +78,40 @@ export const VisitorsPage: React.FC = () => {
   // Filter visitor logs to only show guests for resident's flats
   const myVisitorLogs = visitorLogs.filter((log) => myFlatIds.includes(log.flatId));
 
-  const handlePreRegister = (e: React.FormEvent) => {
+  const handlePreRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.visitorName || !formData.phone || !formData.flatId) return;
 
-    const targetFlat = flats.find((f) => f.id === parseInt(formData.flatId));
-    const passcode = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+    setErrorMsg('');
+    setSuccessMsg('');
 
-    const newPass: PreRegisteredPass = {
-      id: Math.random().toString(36).substr(2, 9),
-      visitorName: formData.visitorName,
-      phone: formData.phone,
-      vehicleNumber: formData.vehicleNumber || undefined,
-      expectedDate: formData.expectedDate,
-      purpose: formData.purpose,
-      passcode,
-      flatNumber: targetFlat ? targetFlat.flatNumber : 'N/A',
-    };
+    try {
+      const res = await axiosClient.post<PreRegisteredPass>('visitors/pre-register', {
+        visitorName: formData.visitorName,
+        phone: formData.phone,
+        vehicleNumber: formData.vehicleNumber || null,
+        flatId: parseInt(formData.flatId),
+        purpose: formData.purpose,
+        expectedDate: formData.expectedDate,
+      });
 
-    const updatedPasses = [newPass, ...preRegistered];
-    setPreRegistered(updatedPasses);
-    localStorage.setItem(`preregistered_passes_${user?.id}`, JSON.stringify(updatedPasses));
-
-    setCreatedPass(newPass);
-    setSuccessMsg('Guest pre-registered successfully!');
-    setFormData({
-      visitorName: '',
-      phone: '',
-      vehicleNumber: '',
-      flatId: '',
-      purpose: 'Guest',
-      expectedDate: new Date().toISOString().split('T')[0],
-    });
-    setActiveTab('preregister');
+      const newPass = res.data;
+      setPreRegistered([newPass, ...preRegistered]);
+      setCreatedPass(newPass);
+      setSuccessMsg('Guest pre-registered successfully!');
+      setFormData({
+        visitorName: '',
+        phone: '',
+        vehicleNumber: '',
+        flatId: '',
+        purpose: 'Guest',
+        expectedDate: new Date().toISOString().split('T')[0],
+      });
+      setTimeout(() => setSuccessMsg(''), 4500);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.response?.data?.message || 'Failed to pre-register guest. Please try again.');
+    }
   };
 
   const copyInviteMessage = (pass: PreRegisteredPass) => {
@@ -122,10 +120,17 @@ export const VisitorsPage: React.FC = () => {
     alert('Invitation message copied to clipboard!');
   };
 
-  const deletePass = (id: string) => {
-    const updated = preRegistered.filter((p) => p.id !== id);
-    setPreRegistered(updated);
-    localStorage.setItem(`preregistered_passes_${user?.id}`, JSON.stringify(updated));
+  const deletePass = async (id: number) => {
+    if (!window.confirm('Are you sure you want to revoke this digital gate pass?')) return;
+    try {
+      await axiosClient.delete(`visitors/pre-registered/${id}`);
+      setPreRegistered(preRegistered.filter((p) => p.id !== id));
+      setSuccessMsg('Gate pass revoked successfully.');
+      setTimeout(() => setSuccessMsg(''), 4500);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to revoke pass.');
+    }
   };
 
   if (loading) return <LoadingSpinner />;
@@ -138,6 +143,18 @@ export const VisitorsPage: React.FC = () => {
           Monitor current guests checked into your flats and pre-register upcoming visitors.
         </p>
       </div>
+
+      {successMsg && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-lg">
+          {successMsg}
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-lg">
+          {errorMsg}
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

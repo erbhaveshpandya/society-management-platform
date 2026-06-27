@@ -24,6 +24,10 @@ export const VisitorEntryPage: React.FC = () => {
     purpose: 'Guest',
   });
 
+  const [entryMode, setEntryMode] = useState<'standard' | 'passcode'>('standard');
+  const [passcode, setPasscode] = useState('');
+  const [validatingPass, setValidatingPass] = useState(false);
+
   useEffect(() => {
     const fetchFlats = async () => {
       try {
@@ -62,6 +66,27 @@ export const VisitorEntryPage: React.FC = () => {
     }
   };
 
+  const handleVerifyPasscode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passcode.trim()) return;
+
+    setValidatingPass(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    try {
+      const res = await axiosClient.post('visitors/verify-pass', { passcode: passcode.trim() });
+      setSuccessMsg(`✅ Pass verified! Guest "${res.data.visitorName}" successfully checked in for Flat ${res.data.flatNumber}.`);
+      setPasscode('');
+      setTimeout(() => setSuccessMsg(''), 6000);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err?.response?.data?.message || 'Invalid passcode. Pass verification failed.');
+    } finally {
+      setValidatingPass(false);
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -73,9 +98,41 @@ export const VisitorEntryPage: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-slate-800">Check In Visitor</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Register guest details at the gate for society entry
+            Register guest details or verify digital pass codes at the gate.
           </p>
         </div>
+      </div>
+
+      {/* Mode Switcher Tabs */}
+      <div className="flex gap-4 border-b border-slate-100 pb-px">
+        <button
+          onClick={() => {
+            setEntryMode('standard');
+            setErrorMsg('');
+            setSuccessMsg('');
+          }}
+          className={`pb-3 text-sm font-semibold border-b-2 px-1 transition-all ${
+            entryMode === 'standard'
+              ? 'border-primary-600 text-primary-600'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          Standard Entry
+        </button>
+        <button
+          onClick={() => {
+            setEntryMode('passcode');
+            setErrorMsg('');
+            setSuccessMsg('');
+          }}
+          className={`pb-3 text-sm font-semibold border-b-2 px-1 transition-all ${
+            entryMode === 'passcode'
+              ? 'border-primary-600 text-primary-600'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          Verify Digital Pass
+        </button>
       </div>
 
       {successMsg && (
@@ -92,86 +149,120 @@ export const VisitorEntryPage: React.FC = () => {
         </div>
       )}
 
-      <Card className="p-6 bg-white">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Input
-                label="Visitor Name"
-                value={formData.visitorName}
-                onChange={(e) => setFormData({ ...formData, visitorName: e.target.value })}
-                placeholder="e.g. Rajesh Kumar"
-                required
-              />
+      {entryMode === 'standard' ? (
+        <Card className="p-6 bg-white">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Input
+                  label="Visitor Name"
+                  value={formData.visitorName}
+                  onChange={(e) => setFormData({ ...formData, visitorName: e.target.value })}
+                  placeholder="e.g. Rajesh Kumar"
+                  required
+                />
+              </div>
+              <div>
+                <Input
+                  label="Phone Number"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="e.g. 9876543210"
+                  required
+                />
+              </div>
             </div>
-            <div>
-              <Input
-                label="Phone Number"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="e.g. 9876543210"
-                required
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Input
-                label="Vehicle Number (Optional)"
-                value={formData.vehicleNumber}
-                onChange={(e) => setFormData({ ...formData, vehicleNumber: e.target.value })}
-                placeholder="e.g. MH12AB1234"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Input
+                  label="Vehicle Number (Optional)"
+                  value={formData.vehicleNumber}
+                  onChange={(e) => setFormData({ ...formData, vehicleNumber: e.target.value })}
+                  placeholder="e.g. MH12AB1234"
+                />
+              </div>
+              <div className="text-left">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Purpose of Visit</label>
+                <select
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-100 text-sm"
+                  value={formData.purpose}
+                  onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
+                  required
+                >
+                  {PURPOSES.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
             </div>
+
             <div className="text-left">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Purpose of Visit</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Destination Flat</label>
               <select
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-100 text-sm"
-                value={formData.purpose}
-                onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
+                value={formData.flatId}
+                onChange={(e) => setFormData({ ...formData, flatId: e.target.value })}
                 required
               >
-                {PURPOSES.map((p) => (
-                  <option key={p} value={p}>{p}</option>
+                <option value="">-- Select Flat --</option>
+                {flats.map((flat) => (
+                  <option key={flat.id} value={flat.id}>
+                    {flat.flatNumber} {flat.buildingName ? `(${flat.buildingName})` : ''} {flat.ownerName ? `— ${flat.ownerName}` : ''}
+                  </option>
                 ))}
               </select>
             </div>
-          </div>
 
-          <div className="text-left">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Destination Flat</label>
-            <select
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-100 text-sm"
-              value={formData.flatId}
-              onChange={(e) => setFormData({ ...formData, flatId: e.target.value })}
-              required
-            >
-              <option value="">-- Select Flat --</option>
-              {flats.map((flat) => (
-                <option key={flat.id} value={flat.id}>
-                  {flat.flatNumber} {flat.buildingName ? `(${flat.buildingName})` : ''} {flat.ownerName ? `— ${flat.ownerName}` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFormData({ visitorName: '', phone: '', vehicleNumber: '', flatId: '', purpose: 'Guest' })}
+              >
+                Clear Form
+              </Button>
+              <Button type="submit" disabled={submitting} className="flex items-center gap-1.5">
+                <UserPlus size={16} />
+                {submitting ? 'Checking In...' : 'Check In Visitor'}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      ) : (
+        <Card className="p-6 bg-white">
+          <form onSubmit={handleVerifyPasscode} className="space-y-5">
+            <div className="text-left">
+              <Input
+                label="Digital Invite Passcode"
+                placeholder="e.g. INV-123456"
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value.toUpperCase())}
+                required
+                className="text-lg font-mono font-bold tracking-widest text-center"
+              />
+              <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                Residents generate invitation codes for their upcoming guests. Enter the 6-digit passcode starting with INV- (e.g. INV-234856) to instantly verify and check them in.
+              </p>
+            </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setFormData({ visitorName: '', phone: '', vehicleNumber: '', flatId: '', purpose: 'Guest' })}
-            >
-              Clear Form
-            </Button>
-            <Button type="submit" disabled={submitting} className="flex items-center gap-1.5">
-              <UserPlus size={16} />
-              {submitting ? 'Checking In...' : 'Check In Visitor'}
-            </Button>
-          </div>
-        </form>
-      </Card>
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPasscode('')}
+                disabled={validatingPass}
+              >
+                Clear
+              </Button>
+              <Button type="submit" disabled={validatingPass || !passcode} className="flex items-center gap-1.5">
+                {validatingPass ? 'Verifying Pass...' : 'Verify & Approve Entry'}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
 
       <Card className="p-4 bg-slate-50/50 border-slate-100">
         <div className="flex items-start gap-3">

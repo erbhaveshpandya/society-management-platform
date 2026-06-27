@@ -65,10 +65,10 @@ export const LoginPage: React.FC = () => {
             <Home size={32} />
           </div>
           <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">
-            SOCIETY MANAGEMENT
+            SOCIVEXA
           </h2>
-          <p className="text-sm text-slate-500 font-medium mt-1">
-            Sign in to access your dashboard
+          <p className="text-xs text-slate-500 font-semibold mt-1">
+            Smart Society Living, Simplified.
           </p>
         </div>
 
