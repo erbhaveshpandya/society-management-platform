@@ -132,7 +132,7 @@ export const LoginPage: React.FC = () => {
               </div>
               <div className="p-2 bg-slate-50 rounded-lg border border-slate-100/50">
                 <p className="font-semibold text-slate-800 mb-0.5">Super Admin</p>
-                <p className="font-mono text-slate-400">superadmin@smp.com</p>
+                <p className="font-mono text-slate-400">superadmin@socivexa.com</p>
                 <p className="font-mono text-slate-400">Password123!</p>
               </div>
             </div>

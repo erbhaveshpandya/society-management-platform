@@ -56,7 +56,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://192.168.101.221:8001", "http://192.168.101.221:8002")
+        policy.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://192.168.0.101:8001", "http://192.168.0.101:8002")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
