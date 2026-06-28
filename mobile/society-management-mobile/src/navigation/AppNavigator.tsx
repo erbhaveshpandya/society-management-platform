@@ -106,7 +106,7 @@ export const AppNavigator: React.FC = () => {
 
   // Trigger siren audio and vibration feedback
   useEffect(() => {
-    const hasEmergency = activeAlert !== null || residentEmergency !== null;
+    const hasEmergency = activeAlert !== null;
     
     if (hasEmergency) {
       // Vibrate continuously: [wait 500ms, vibrate 500ms]
