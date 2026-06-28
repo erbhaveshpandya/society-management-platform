@@ -142,40 +142,56 @@ export const SecurityDashboardScreen: React.FC = () => {
             <Text style={styles.sectionTitle}>Gate Statistics</Text>
             <View style={styles.statsGrid}>
               <AppCard
-                title="Active Visitors"
-                icon="walk-outline"
-                iconColor="#F59E0B"
-                iconBgColor="#FFFBEB"
-                value={dashboard.activeVisitors}
                 style={styles.statCard}
                 onPress={() => navigation.navigate('LiveVisitors')}
-              />
-              <AppCard
-                title="Today's Check-ins"
-                icon="checkmark-circle-outline"
-                iconColor="#10B981"
-                iconBgColor="#ECFDF5"
-                value={dashboard.todayVisitors}
-                style={styles.statCard}
-              />
+              >
+                <View style={styles.metricCardContent}>
+                  <View style={[styles.metricIconBg, { backgroundColor: '#FFFBEB' }]}>
+                    <Ionicons name="walk-outline" size={20} color="#F59E0B" />
+                  </View>
+                  <Text style={styles.metricValue}>
+                    {dashboard.activeVisitors}
+                  </Text>
+                  <Text style={styles.metricLabel}>Active Visitors</Text>
+                </View>
+              </AppCard>
+
+              <AppCard style={styles.statCard}>
+                <View style={styles.metricCardContent}>
+                  <View style={[styles.metricIconBg, { backgroundColor: '#ECFDF5' }]}>
+                    <Ionicons name="checkmark-circle-outline" size={20} color="#10B981" />
+                  </View>
+                  <Text style={styles.metricValue}>
+                    {dashboard.todayVisitors}
+                  </Text>
+                  <Text style={styles.metricLabel}>Today's Check-ins</Text>
+                </View>
+              </AppCard>
             </View>
             <View style={styles.statsGrid}>
-              <AppCard
-                title="Staff Present"
-                icon="people-outline"
-                iconColor="#3B82F6"
-                iconBgColor="#EFF6FF"
-                value={dashboard.staffCheckedIn}
-                style={styles.statCard}
-              />
-              <AppCard
-                title="Parking Alerts"
-                icon="alert-circle-outline"
-                iconColor="#DC2626"
-                iconBgColor="#FEF2F2"
-                value={dashboard.parkingAlerts}
-                style={styles.statCard}
-              />
+              <AppCard style={styles.statCard}>
+                <View style={styles.metricCardContent}>
+                  <View style={[styles.metricIconBg, { backgroundColor: '#EFF6FF' }]}>
+                    <Ionicons name="people-outline" size={20} color="#3B82F6" />
+                  </View>
+                  <Text style={styles.metricValue}>
+                    {dashboard.staffCheckedIn}
+                  </Text>
+                  <Text style={styles.metricLabel}>Staff Present</Text>
+                </View>
+              </AppCard>
+
+              <AppCard style={styles.statCard}>
+                <View style={styles.metricCardContent}>
+                  <View style={[styles.metricIconBg, { backgroundColor: '#FEF2F2' }]}>
+                    <Ionicons name="alert-circle-outline" size={20} color="#DC2626" />
+                  </View>
+                  <Text style={styles.metricValue}>
+                    {dashboard.parkingAlerts}
+                  </Text>
+                  <Text style={styles.metricLabel}>Parking Alerts</Text>
+                </View>
+              </AppCard>
             </View>
           </View>
         )}
@@ -349,5 +365,27 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+  },
+  metricCardContent: {
+    alignItems: 'flex-start',
+  },
+  metricIconBg: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  metricValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  metricLabel: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 4,
   },
 });

@@ -9,10 +9,12 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import * as SecureStore from 'expo-secure-store';
 import { AppCard } from '../../components/AppCard';
 import { AppButton } from '../../components/AppButton';
 import { LoadingState } from '../../components/LoadingState';
@@ -29,9 +31,40 @@ export const AdminDashboardScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
+  // SuperAdmin active society switching states
+  const [societies, setSocieties] = useState<{ id: number; name: string }[]>([]);
+  const [selectedSocietyId, setSelectedSocietyId] = useState<number | null>(null);
+  const [societyModalVisible, setSocietyModalVisible] = useState(false);
+
   // SOS State
   const [sosModalVisible, setSosModalVisible] = useState(false);
   const [triggeringSOS, setTriggeringSOS] = useState(false);
+
+  const fetchSocietiesList = async () => {
+    if (user?.role !== 'SuperAdmin') return;
+    try {
+      const res = await axiosClient.get<{ id: number; name: string }[]>('societies');
+      setSocieties(res.data);
+      
+      const storedId = await SecureStore.getItemAsync('selectedSocietyId');
+      if (storedId) {
+        setSelectedSocietyId(parseInt(storedId, 10));
+      } else if (res.data.length > 0) {
+        setSelectedSocietyId(res.data[0].id);
+        await SecureStore.setItemAsync('selectedSocietyId', res.data[0].id.toString());
+      }
+    } catch (err) {
+      console.error('Failed to load societies list in AdminDashboard:', err);
+    }
+  };
+
+  const handleSwitchSociety = async (id: number) => {
+    setSelectedSocietyId(id);
+    await SecureStore.setItemAsync('selectedSocietyId', id.toString());
+    setSocietyModalVisible(false);
+    // Reload dashboard content
+    fetchDashboard(false);
+  };
 
   const fetchDashboard = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -82,19 +115,42 @@ export const AdminDashboardScreen: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
-      fetchDashboard();
-    }, [])
+      const initDashboard = async () => {
+        if (user?.role === 'SuperAdmin') {
+          await fetchSocietiesList();
+        }
+        await fetchDashboard();
+      };
+      initDashboard();
+    }, [user])
   );
 
   if (loading) return <LoadingState message="Loading admin metrics..." />;
+
+  const currentSocietyName = societies.find(s => s.id === selectedSocietyId)?.name || 'Select Society';
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.roleText}>{user?.role} Portal</Text>
           <Text style={styles.userName}>{user?.fullName}</Text>
+          {user?.role === 'SuperAdmin' ? (
+            <TouchableOpacity
+              style={styles.societySwitcherBtn}
+              onPress={() => setSocietyModalVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="business-outline" size={13} color="#4F46E5" />
+              <Text style={styles.societySwitcherText} numberOfLines={1}>
+                {currentSocietyName}
+              </Text>
+              <Ionicons name="chevron-down" size={13} color="#4F46E5" />
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.societyNameText}>{user?.societyName}</Text>
+          )}
         </View>
         <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
           <Ionicons name="log-out-outline" size={22} color="#64748B" />
@@ -302,6 +358,60 @@ export const AdminDashboardScreen: React.FC = () => {
                 <Text style={styles.loaderText}>Broadcasting Alert...</Text>
               </View>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Society Selector Modal */}
+      <Modal
+        visible={societyModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setSocietyModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.societyModalContent}>
+            <View style={styles.modalHeaderBorder}>
+              <Text style={styles.societyModalTitle}>Switch Active Society</Text>
+              <TouchableOpacity onPress={() => setSocietyModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={societies}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={{ paddingVertical: 10 }}
+              renderItem={({ item }) => {
+                const isSelected = item.id === selectedSocietyId;
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.societyItemRow,
+                      isSelected && styles.societyItemRowActive
+                    ]}
+                    onPress={() => handleSwitchSociety(item.id)}
+                  >
+                    <Ionicons
+                      name={isSelected ? "checkbox" : "square-outline"}
+                      size={20}
+                      color={isSelected ? "#4F46E5" : "#64748B"}
+                    />
+                    <Text style={[
+                      styles.societyItemText,
+                      isSelected && styles.societyItemTextActive
+                    ]}>
+                      {item.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ color: '#64748B' }}>No societies found</Text>
+                </View>
+              }
+            />
           </View>
         </View>
       </Modal>
@@ -598,5 +708,75 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#EF4444',
     fontWeight: '600',
+  },
+  societySwitcherBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 6,
+    gap: 4,
+  },
+  societySwitcherText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4F46E5',
+    maxWidth: 180,
+  },
+  societyNameText: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  societyModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    width: '100%',
+    maxHeight: '70%',
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  modalHeaderBorder: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 14,
+    marginBottom: 10,
+  },
+  societyModalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  societyItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 6,
+    gap: 12,
+  },
+  societyItemRowActive: {
+    backgroundColor: '#F5F3FF',
+  },
+  societyItemText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  societyItemTextActive: {
+    color: '#4F46E5',
+    fontWeight: '700',
   },
 });
