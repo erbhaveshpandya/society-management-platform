@@ -107,7 +107,8 @@ public static class SeedData
             var societies = new List<Society>
             {
                 new() { Id = 1, Name = "Green Valley Residency", Address = "Plot 12, Sector 5, Wakad", City = "Pune", State = "Maharashtra", PinCode = "411057", RegistrationNumber = "MH-SOC-2020-001", ContactPhone = "9876543210", ContactEmail = "admin@greenvalley.com" },
-                new() { Id = 2, Name = "Sunrise Heights", Address = "Tower Road, Baner", City = "Pune", State = "Maharashtra", PinCode = "411045", RegistrationNumber = "MH-SOC-2021-002", ContactPhone = "9876543211", ContactEmail = "admin@sunriseheights.com" }
+                new() { Id = 2, Name = "Sunrise Heights", Address = "Tower Road, Baner", City = "Pune", State = "Maharashtra", PinCode = "411045", RegistrationNumber = "MH-SOC-2021-002", ContactPhone = "9876543211", ContactEmail = "admin@sunriseheights.com" },
+                new() { Id = 3, Name = "Dwarkesh Bunglows", Address = "Dwarkesh Road, Vastrapur", City = "Ahmedabad", State = "Gujarat", PinCode = "380015", RegistrationNumber = "GJ-SOC-2022-003", ContactPhone = "9000000010", ContactEmail = "admin@dwarkesh.com" }
             };
             context.Database.ExecuteSqlRaw("SET IDENTITY_INSERT Societies ON");
             context.Societies.AddRange(societies);
@@ -119,7 +120,9 @@ public static class SeedData
             {
                 new() { Id = 1, SocietyId = 1, Name = "A Wing", TotalFloors = 10, Description = "Main residential building" },
                 new() { Id = 2, SocietyId = 1, Name = "B Wing", TotalFloors = 8, Description = "Secondary residential building" },
-                new() { Id = 3, SocietyId = 2, Name = "Tower 1", TotalFloors = 12, Description = "Premium tower" }
+                new() { Id = 3, SocietyId = 2, Name = "Tower 1", TotalFloors = 12, Description = "Premium tower" },
+                new() { Id = 4, SocietyId = 3, Name = "Block A", TotalFloors = 2, Description = "Block A Bunglows" },
+                new() { Id = 5, SocietyId = 3, Name = "Block B", TotalFloors = 2, Description = "Block B Bunglows" }
             };
             context.Database.ExecuteSqlRaw("SET IDENTITY_INSERT Buildings ON");
             context.Buildings.AddRange(buildings);
@@ -140,6 +143,9 @@ public static class SeedData
                 new() { Id = 8, SocietyId = 2, Email = "rahul.verma@email.com", PasswordHash = passwordHash, FullName = "Rahul Verma", Phone = "9000000008", Role = UserRole.Resident },
                 new() { Id = 9, SocietyId = 1, Email = "security1@greenvalley.com", PasswordHash = passwordHash, FullName = "Ramesh Yadav", Phone = "9000000009", Role = UserRole.SecurityGuard },
                 new() { Id = 10, SocietyId = 2, Email = "security1@sunriseheights.com", PasswordHash = passwordHash, FullName = "Suresh Patil", Phone = "9000000010", Role = UserRole.SecurityGuard },
+                new() { Id = 11, SocietyId = 3, Email = "shailesh@dwarkesh.com", PasswordHash = passwordHash, FullName = "Shailesh Shah", Phone = "9000000011", Role = UserRole.Resident },
+                new() { Id = 12, SocietyId = 3, Email = "bhavesh@dwarkesh.com", PasswordHash = passwordHash, FullName = "Bhavesh Pandya", Phone = "9000000012", Role = UserRole.SocietyAdmin },
+                new() { Id = 13, SocietyId = 3, Email = "ramesh@dwarkesh.com", PasswordHash = passwordHash, FullName = "Ramesh Chavda", Phone = "9000000013", Role = UserRole.SecurityGuard }
             };
             context.Database.ExecuteSqlRaw("SET IDENTITY_INSERT Users ON");
             context.Users.AddRange(users);
@@ -159,6 +165,8 @@ public static class SeedData
                 new() { Id = 8, SocietyId = 2, BuildingId = 3, FlatNumber = "T1-102", Floor = 1, Type = "3BHK", Area = 1400, OwnerId = 8, IsOccupied = true },
                 new() { Id = 9, SocietyId = 2, BuildingId = 3, FlatNumber = "T1-201", Floor = 2, Type = "1000", IsOccupied = false },
                 new() { Id = 10, SocietyId = 2, BuildingId = 3, FlatNumber = "T1-202", Floor = 2, Type = "1BHK", Area = 700, IsOccupied = false },
+                new() { Id = 11, SocietyId = 3, BuildingId = 4, FlatNumber = "A-06", Floor = 1, Type = "Bunglow", Area = 2000, OwnerId = 11, IsOccupied = true },
+                new() { Id = 12, SocietyId = 3, BuildingId = 5, FlatNumber = "B-26", Floor = 2, Type = "Bunglow", Area = 2500, OwnerId = 12, IsOccupied = true }
             };
             context.Database.ExecuteSqlRaw("SET IDENTITY_INSERT Flats ON");
             context.Flats.AddRange(flats);
@@ -173,6 +181,8 @@ public static class SeedData
                 new() { Id = 3, SocietyId = 1, UserId = 6, FlatId = 4, ResidentType = "Tenant", MoveInDate = new DateTime(2023, 3, 10) },
                 new() { Id = 4, SocietyId = 2, UserId = 7, FlatId = 7, ResidentType = "Owner", MoveInDate = new DateTime(2022, 8, 20) },
                 new() { Id = 5, SocietyId = 2, UserId = 8, FlatId = 8, ResidentType = "Tenant", MoveInDate = new DateTime(2023, 11, 1) },
+                new() { Id = 6, SocietyId = 3, UserId = 11, FlatId = 11, ResidentType = "Owner", MoveInDate = new DateTime(2022, 5, 1) },
+                new() { Id = 7, SocietyId = 3, UserId = 12, FlatId = 12, ResidentType = "Owner", MoveInDate = new DateTime(2022, 5, 1) }
             };
             context.Database.ExecuteSqlRaw("SET IDENTITY_INSERT ResidentProfiles ON");
             context.ResidentProfiles.AddRange(profiles);
