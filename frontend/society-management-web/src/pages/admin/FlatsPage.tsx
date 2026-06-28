@@ -16,6 +16,15 @@ export const FlatsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [currentFlat, setCurrentFlat] = useState<Partial<Flat>>({});
+  
+  // Building Wing Creation states
+  const [isBuildingModalOpen, setIsBuildingModalOpen] = useState(false);
+  const [buildingForm, setBuildingForm] = useState({
+    name: '',
+    totalFloors: 1,
+    description: ''
+  });
+  const [savingBuilding, setSavingBuilding] = useState(false);
 
   const fetchFlats = async () => {
     try {
@@ -27,6 +36,28 @@ export const FlatsPage: React.FC = () => {
       console.error('Failed to load flats:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveBuilding = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!buildingForm.name.trim()) return;
+    setSavingBuilding(true);
+    try {
+      const res = await axiosClient.post<Building>('buildings', {
+        name: buildingForm.name.trim(),
+        totalFloors: buildingForm.totalFloors,
+        description: buildingForm.description.trim()
+      });
+      setIsBuildingModalOpen(false);
+      setBuildingForm({ name: '', totalFloors: 1, description: '' });
+      const buildingsRes = await axiosClient.get<Building[]>('buildings');
+      setBuildings(buildingsRes.data);
+      setCurrentFlat((prev) => ({ ...prev, buildingId: res.data.id }));
+    } catch (err) {
+      console.error('Error saving building:', err);
+    } finally {
+      setSavingBuilding(false);
     }
   };
 
@@ -114,7 +145,16 @@ export const FlatsPage: React.FC = () => {
           />
 
           <div className="mb-4 text-left">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Building Wing</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium text-slate-700">Building Wing</label>
+              <button
+                type="button"
+                onClick={() => setIsBuildingModalOpen(true)}
+                className="text-xs text-primary-600 hover:text-primary-700 font-semibold focus:outline-none"
+              >
+                + Add New Wing
+              </button>
+            </div>
             <select
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-100"
               value={currentFlat.buildingId || ''}
@@ -176,6 +216,55 @@ export const FlatsPage: React.FC = () => {
             </Button>
             <Button variant="primary" type="submit">
               Save
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Building Wing Creation Modal */}
+      <Modal
+        isOpen={isBuildingModalOpen}
+        onClose={() => setIsBuildingModalOpen(false)}
+        title="Add New Wing"
+      >
+        <form onSubmit={handleSaveBuilding} className="space-y-4">
+          <Input
+            label="Wing Name"
+            type="text"
+            value={buildingForm.name}
+            onChange={(e) => setBuildingForm({ ...buildingForm, name: e.target.value })}
+            placeholder="e.g. C Wing"
+            required
+          />
+
+          <Input
+            label="Total Floors"
+            type="number"
+            value={buildingForm.totalFloors}
+            onChange={(e) => setBuildingForm({ ...buildingForm, totalFloors: parseInt(e.target.value) || 1 })}
+            placeholder="e.g. 10"
+            required
+          />
+
+          <Input
+            label="Description"
+            type="text"
+            value={buildingForm.description}
+            onChange={(e) => setBuildingForm({ ...buildingForm, description: e.target.value })}
+            placeholder="e.g. Residential Tower C"
+          />
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsBuildingModalOpen(false)}
+              disabled={savingBuilding}
+            >
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" isLoading={savingBuilding}>
+              Save Wing
             </Button>
           </div>
         </form>
