@@ -61,7 +61,9 @@ builder.Services.AddCors(options =>
         policy.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://192.168.0.101:8001", "http://192.168.0.101:8002")
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowCredentials();
+            .AllowCredentials()
+            .SetIsOriginAllowed(origin => true); // Allow Azure SWA hosting domains
+
     });
 });
 
