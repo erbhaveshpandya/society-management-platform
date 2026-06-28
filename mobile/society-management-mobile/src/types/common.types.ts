@@ -180,3 +180,50 @@ export interface Vehicle {
   make: string;
   model: string;
 }
+
+// --- Buildings & Flats ---
+export interface Building {
+  id: number;
+  societyId: number;
+  name: string;
+  totalFloors: number;
+  description: string;
+}
+
+export interface FlatDto {
+  id: number;
+  societyId: number;
+  buildingId: number;
+  buildingName: string;
+  flatNumber: string;
+  floor: number;
+  type: string;
+  area: number;
+  isOccupied: boolean;
+  ownerId?: number | null;
+  ownerName?: string | null;
+}
+
+// --- Admin Dashboard ---
+export interface MonthlyCollection {
+  month: string;
+  amount: number;
+}
+
+export interface ComplaintsByCategory {
+  category: string;
+  count: number;
+}
+
+export interface AdminDashboard {
+  totalMaintenanceCollected: number;
+  pendingMaintenanceAmount: number;
+  openComplaints: number;
+  activeVisitors: number;
+  upcomingMeetings: number;
+  totalFlats: number;
+  occupiedFlats: number;
+  vacantFlats: number;
+  monthlyCollections: MonthlyCollection[];
+  complaintsByCategory: ComplaintsByCategory[];
+}

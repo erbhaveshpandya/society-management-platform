@@ -16,4 +16,8 @@ export const complaintService = {
   addComment: async (complaintId: number, comment: string): Promise<void> => {
     await axiosClient.post(`complaints/${complaintId}/comments`, { comment });
   },
+
+  updateComplaintStatus: async (complaintId: number, status: string): Promise<void> => {
+    await axiosClient.put(`complaints/${complaintId}/status`, { status });
+  },
 };
