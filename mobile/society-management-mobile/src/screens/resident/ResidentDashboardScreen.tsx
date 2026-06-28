@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { AppCard } from '../../components/AppCard';
 import { AppButton } from '../../components/AppButton';
 import { LoadingState } from '../../components/LoadingState';
@@ -24,6 +24,7 @@ import axiosClient from '../../api/axiosClient';
 
 export const ResidentDashboardScreen: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigation = useNavigation<any>();
   const [dashboard, setDashboard] = useState<ResidentDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -212,39 +213,65 @@ export const ResidentDashboardScreen: React.FC = () => {
           <>
             <View style={styles.statsGrid}>
               <AppCard
-                title="Outstanding Dues"
-                icon="wallet-outline"
-                iconColor="#DC2626"
-                iconBgColor="#FEF2F2"
-                value={`₹${dashboard.totalDues.toLocaleString('en-IN')}`}
                 style={styles.statCard}
-              />
+                onPress={() => navigation.navigate('Dues')}
+              >
+                <View style={styles.metricCardContent}>
+                  <View style={[styles.metricIconBg, { backgroundColor: '#FEF2F2' }]}>
+                    <Ionicons name="wallet-outline" size={20} color="#DC2626" />
+                  </View>
+                  <Text style={styles.metricValue}>
+                    ₹{dashboard.totalDues.toLocaleString('en-IN')}
+                  </Text>
+                  <Text style={styles.metricLabel}>Outstanding Dues</Text>
+                </View>
+              </AppCard>
+
               <AppCard
-                title="Open Complaints"
-                icon="chatbubble-ellipses-outline"
-                iconColor="#F59E0B"
-                iconBgColor="#FFFBEB"
-                value={dashboard.openComplaints.toString()}
                 style={styles.statCard}
-              />
+                onPress={() => navigation.navigate('Complaints')}
+              >
+                <View style={styles.metricCardContent}>
+                  <View style={[styles.metricIconBg, { backgroundColor: '#FFFBEB' }]}>
+                    <Ionicons name="chatbubble-ellipses-outline" size={20} color="#F59E0B" />
+                  </View>
+                  <Text style={styles.metricValue}>
+                    {dashboard.openComplaints}
+                  </Text>
+                  <Text style={styles.metricLabel}>Open Complaints</Text>
+                </View>
+              </AppCard>
             </View>
             <View style={styles.statsGrid}>
               <AppCard
-                title="Active Bookings"
-                icon="calendar-outline"
-                iconColor="#10B981"
-                iconBgColor="#ECFDF5"
-                value={dashboard.activeBookings.toString()}
                 style={styles.statCard}
-              />
+                onPress={() => navigation.navigate('More', { screen: 'Amenities' })}
+              >
+                <View style={styles.metricCardContent}>
+                  <View style={[styles.metricIconBg, { backgroundColor: '#ECFDF5' }]}>
+                    <Ionicons name="calendar-outline" size={20} color="#10B981" />
+                  </View>
+                  <Text style={styles.metricValue}>
+                    {dashboard.activeBookings}
+                  </Text>
+                  <Text style={styles.metricLabel}>Active Bookings</Text>
+                </View>
+              </AppCard>
+
               <AppCard
-                title="Notifications"
-                icon="notifications-outline"
-                iconColor="#6366F1"
-                iconBgColor="#EEF2FF"
-                value={dashboard.unreadNotifications.toString()}
                 style={styles.statCard}
-              />
+                onPress={() => navigation.navigate('More', { screen: 'Notices' })}
+              >
+                <View style={styles.metricCardContent}>
+                  <View style={[styles.metricIconBg, { backgroundColor: '#EEF2FF' }]}>
+                    <Ionicons name="notifications-outline" size={20} color="#6366F1" />
+                  </View>
+                  <Text style={styles.metricValue}>
+                    {dashboard.unreadNotifications}
+                  </Text>
+                  <Text style={styles.metricLabel}>Notifications</Text>
+                </View>
+              </AppCard>
             </View>
 
             {/* Recent Notices */}
@@ -485,5 +512,27 @@ const styles = StyleSheet.create({
   sosOptionLabel: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  metricCardContent: {
+    alignItems: 'flex-start',
+  },
+  metricIconBg: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  metricValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  metricLabel: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
+    marginTop: 4,
   },
 });
