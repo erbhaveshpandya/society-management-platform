@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SecurityDashboardScreen } from '../screens/security/SecurityDashboardScreen';
 import { VisitorEntryScreen } from '../screens/security/VisitorEntryScreen';
 import { LiveVisitorsScreen } from '../screens/security/LiveVisitorsScreen';
+import { StaffAttendanceScreen } from '../screens/security/StaffAttendanceScreen';
+import { WrongParkingScreen } from '../screens/security/WrongParkingScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -20,6 +22,10 @@ const SecurityTabNavigator: React.FC = () => {
             iconName = focused ? 'shield' : 'shield-outline';
           } else if (route.name === 'LiveVisitors') {
             iconName = focused ? 'people' : 'people-outline';
+          } else if (route.name === 'StaffAttendance') {
+            iconName = focused ? 'time' : 'time-outline';
+          } else if (route.name === 'WrongParking') {
+            iconName = focused ? 'car' : 'car-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -44,6 +50,16 @@ const SecurityTabNavigator: React.FC = () => {
         component={LiveVisitorsScreen} 
         options={{ tabBarLabel: 'Live Inside' }}
       />
+      <Tab.Screen 
+        name="StaffAttendance" 
+        component={StaffAttendanceScreen} 
+        options={{ tabBarLabel: 'Staff' }}
+      />
+      <Tab.Screen 
+        name="WrongParking" 
+        component={WrongParkingScreen} 
+        options={{ tabBarLabel: 'Parking' }}
+      />
     </Tab.Navigator>
   );
 };
@@ -54,6 +70,8 @@ export const SecurityStack: React.FC = () => {
       <Stack.Screen name="SecurityTabs" component={SecurityTabNavigator} />
       <Stack.Screen name="VisitorEntry" component={VisitorEntryScreen} />
       <Stack.Screen name="LiveVisitors" component={LiveVisitorsScreen} />
+      <Stack.Screen name="StaffAttendance" component={StaffAttendanceScreen} />
+      <Stack.Screen name="WrongParking" component={WrongParkingScreen} />
     </Stack.Navigator>
   );
 };
